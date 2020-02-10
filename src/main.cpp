@@ -21,7 +21,7 @@
 
 	Layers/steps to build:
 	1. 1D Convolution layer and Maxpooling
-	2. Batch normalization process
+	2. add gamma and beta to batch normalization
 	3. LSTM 
 	4. Add bias to feed-forward
 
@@ -147,6 +147,7 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 //TODO: add bias to this process
 void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 {
+	//Process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
 	batch_normalization(input->data);
 	*(input->data) = *(input->data) * *(layer1);
 	activation_function(input->data, "relu");
@@ -266,11 +267,10 @@ void convert_data(std::vector<std::string> files)
 			auto raw_data = document["data"].GetArray();
 			auto genre = document["genre"].GetString();
 			std::vector<double> temp;
-			int data_row_count = 0;
+
 			for(rapidjson::SizeType i = 0; i < raw_data.Size(); i++) 
     		{
 				int inner_row_count = 0;
-				data_row_count++;
         		rapidjson::Value& row = raw_data[i];
         		for(rapidjson::SizeType j = 0; j < row.Size(); j++)
 				{
@@ -283,13 +283,6 @@ void convert_data(std::vector<std::string> files)
 					inner_row_count++;
 				}
     		}
-
-			while(data_row_count < DATA_ROWS)
-			{
-				for(int i = 0; i < DATA_ROW_LENGTH; i++)
-					temp.push_back(0);
-				data_row_count++;
-			}
 			
 			row_buffer.push_back(temp);
 			genre_buffer.push_back(genre_to_output(genre));
