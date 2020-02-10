@@ -20,7 +20,11 @@
 	TODO AND NOTES:
 
 	Layers/steps to build:
+	
 	1. 1D Convolution layer and Maxpooling
+		review these links, will probably need to change out data is represented to best facilitate convolution process using matrix operations  
+		- https://towardsdatascience.com/understanding-1d-and-3d-convolution-neural-network-keras-9d8f76e29610
+		- https://www.freecodecamp.org/news/an-intuitive-guide-to-convolutional-neural-networks-260c2de0a050/
 	2. add gamma and beta to batch normalization
 	3. LSTM 
 	4. Add bias to feed-forward
