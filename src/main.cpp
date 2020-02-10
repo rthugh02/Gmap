@@ -60,7 +60,7 @@ const int OUTPUT_COUNT = 8;
 //min(-) max(+) possible weight
 const double MAX_WEIGHT = .25;
 //number of threads to use for parsing files
-const int THREAD_COUNT = 1;
+const int THREAD_COUNT = 11;
 
 //*******************************//
 //*********SHARED VARS***********//
@@ -106,7 +106,7 @@ int main() {
 	std::vector<std::thread> directory_threads;
 
 	//thread dedicated to feed-forward/back-propogation of NN
-	//std::thread train_thread(train, weights1, weights2, weights3);
+	std::thread train_thread(train, weights1, weights2, weights3);
 	
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
@@ -122,7 +122,7 @@ int main() {
 	//joining threads
 	for(auto & thread : directory_threads)
 		thread.join();
-	//train_thread.join();
+	train_thread.join();
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
@@ -251,11 +251,11 @@ void convert_data(std::vector<std::string> files)
 			auto raw_data = document["data"].GetArray();
 			auto genre = document["genre"].GetString();
 			std::vector<double> temp;
-			int row_count = 0;
+			int data_row_count = 0;
 			for(rapidjson::SizeType i = 0; i < raw_data.Size(); i++) 
     		{
 				int inner_row_count = 0;
-				row_count++;
+				data_row_count++;
         		rapidjson::Value& row = raw_data[i];
         		for(rapidjson::SizeType j = 0; j < row.Size(); j++)
 				{
@@ -268,9 +268,13 @@ void convert_data(std::vector<std::string> files)
 					inner_row_count++;
 				}
     		}
-			//TODO: If rows not at 128, insert empty rows
-			while(temp.size() < INPUT_COUNT)
-				temp.push_back(0);
+
+			while(data_row_count < DATA_ROWS)
+			{
+				for(int i = 0; i < DATA_ROW_LENGTH; i++)
+					temp.push_back(0);
+				data_row_count++;
+			}
 			
 			row_buffer.push_back(temp);
 			genre_buffer.push_back(genre_to_output(genre));
