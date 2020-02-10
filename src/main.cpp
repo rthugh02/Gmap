@@ -23,11 +23,8 @@
 	1. 1D Convolution layer and Maxpooling
 	2. Batch normalization process
 	3. LSTM 
+	4. Add bias to feed-forward
 
-	Don't need to pad 0's just at the end of data when not equal to input count,
-	finding the max length of the inner rows and number of rows currently. Once that is determined,
-	need to change data padding code at line 268 to pad short inner rows individually, and add 
-	missing number of rows with zeros
 */
 
 //*****************************//
@@ -40,6 +37,7 @@ arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
 void feed_forward(InputBatch *, arma::mat *, arma::mat *, arma::mat *);
 void activation_function(arma::mat *, const char *);
+void batch_normalization(arma::mat *);
 
 //*****************************//
 //*********CONSTANTS***********//
@@ -149,6 +147,7 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 //TODO: add bias to this process
 void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 {
+	batch_normalization(input->data);
 	*(input->data) = *(input->data) * *(layer1);
 	activation_function(input->data, "relu");
 	*(input->data) = *(input->data) * *(layer2);
@@ -196,9 +195,25 @@ void activation_function(arma::mat * input, const char * function)
 
 		*(input) %= (1 / sum_multiplier);
 
-		//input->print();
+		input->print("output:");
 		
 	}
+}
+
+//TODO: Add in gamma and beta scale/shift values that can be trained
+//Normalization such that norm(val) = (val - mean) / sqrt(variance + er)
+void batch_normalization(arma::mat * batch) 
+{
+	arma::rowvec feature_means = arma::sum(*batch, 0) / batch->n_rows;
+	arma::rowvec feature_variances = arma::sum(
+		(batch->each_row() - feature_means).transform([] (double val) { return val*val; } ), 0) / batch->n_rows; 
+	
+	//denominator of normalization formula
+	feature_variances.transform([] (double val) { return sqrt(val + 0.0001); } );
+	//subtracting means for numerator
+	batch->each_row() -= feature_means;
+	//normalized values
+	batch->each_row() %= (1 / (feature_variances));
 }
 
 /*files assigned to thread are parsed and used to create matrix rows that are inserted into
@@ -304,7 +319,6 @@ void convert_data(std::vector<std::string> files)
 	Rock			0 0 0 0 0 0 0 1
 */
 
-//TODO: This may need to be changed to be semicolon seperated, this creates a column vector
 arma::rowvec genre_to_output(const char * genre)
 {
 	if(strcmp("Hip-Hop", genre) == 0)
