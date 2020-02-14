@@ -35,12 +35,12 @@
 //*********FUNCTIONS***********//
 //*****************************//
 
-void convolution(arma::cube *);
-void train(arma::mat *, arma::mat *, arma::mat *);
+void convolution(arma::cube *, arma::mat *);
+void train(arma::mat *, arma::mat *, arma::mat *, arma::mat *);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-void feed_forward(InputBatch *, arma::mat *, arma::mat *, arma::mat *);
+void feed_forward(InputBatch *, arma::mat *, arma::mat *, arma::mat *, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::mat *);
 
@@ -114,7 +114,7 @@ int main() {
 	std::vector<std::thread> directory_threads;
 
 	//thread dedicated to feed-forward/back-propogation of NN
-	std::thread train_thread(train, weights1, weights2, weights3);
+	std::thread train_thread(train, weights1, weights2, weights3, kernel);
 	
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
@@ -134,7 +134,7 @@ int main() {
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
-void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
+void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3, arma::mat * kernel)
 {
 	//while there are directory threads still doing work
 	int batch_count = 0;
@@ -148,19 +148,19 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		feed_forward(next, layer1, layer2, layer3);
+		feed_forward(next, layer1, layer2, layer3, kernel);
 		next->free();
 		std::cout << "consuming item " << ++batch_count << " from queue" << std::endl;
 	}
 }
 
 //TODO: add bias to this process
-void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
+void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3, arma::mat * kernel)
 {
 	
 	//Process: (1D convolution -> ReLu -> Batch normalization -> maxpooling) -> LSTM -> dense -> output
 
-	convolution(input->data);
+	convolution(input->data, kernel);
 	//batch_normalization(input->data);
 	//*(input->data) = *(input->data) * *(layer1);
 	//activation_function(input->data, "relu");
@@ -170,7 +170,7 @@ void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, ar
 	//activation_function(input->data, "softmax");
 }
 
-void convolution(arma::cube * data)
+void convolution(arma::cube * data, arma::mat * kernel)
 {
 	//Kernel applied to each song will be a matrix rows = 128 and variable columns
 	//each row of the kernel will perform Hadamard product with the sub-row of the input
@@ -178,7 +178,7 @@ void convolution(arma::cube * data)
 	//padding will be applied to left and right side as equally as possible equal to kernel_width - 1
 
 	//apply convolution to each song
-	for(int slice = 0; slice < data->n_slices; slice++)
+	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
 		
 	}
