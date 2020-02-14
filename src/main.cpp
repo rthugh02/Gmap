@@ -177,10 +177,16 @@ void convolution(arma::cube * data, arma::mat * kernel)
 	//These values will be added together to produce a value in the centered column of the output
 	//padding will be applied to left and right side as equally as possible equal to kernel_width - 1
 
-	//apply convolution to each song
+	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
-		
+		//apply padding vectors
+
+		//calculate convoluted vector
+		//for(int j = 0; j < DATA_ROW_LENGTH; j++)
+		//{
+		//	arma::mat convolving_vectors = data->slice(slice).submat()
+		//} 
 	}
 }
 
@@ -304,12 +310,13 @@ void convert_data(std::vector<std::string> files)
 					temp.push_back(row[j].GetDouble());
 					inner_row_count++;
 				}
+				//adding missing time data to end if not long enough
 				while(inner_row_count < DATA_ROW_LENGTH)
 				{
 					temp.push_back(0);
 					inner_row_count++;
 				}
-				spectogram_data.insert_rows((int)i, arma::rowvec(temp));
+				spectogram_data.insert_rows((int)i, arma::rowvec(temp));				
     		}
 
 			song_buffer.push_back(spectogram_data);
