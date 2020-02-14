@@ -1,11 +1,9 @@
 #include "InputBatch.h"
 #include <armadillo>
-#include <string>
-#include <vector>
 
-InputBatch::InputBatch(arma::mat * input_matrix, arma::mat * genres)
+InputBatch::InputBatch(arma::cube * input_matrix, arma::mat * genres)
 {
-    data = input_matrix;
+    this->data = input_matrix;
     this->genres = genres;
 }
 

@@ -1,8 +1,6 @@
 #ifndef INPUTBATCH_H
 #define INPUTBATCH_H
 
-#include <vector>
-#include <string>
 #include <armadillo>
 class InputBatch
 {
@@ -10,9 +8,11 @@ class InputBatch
     
   
   public:
+    //cube of data. Each matrix slice represents one song
+    arma::cube * data;
+    //matrix of data. Each row represents the correct output vector corresponding with each slice in the batch. 
     arma::mat * genres;
-    arma::mat * data;
-    InputBatch(arma::mat *, arma::mat *);
+    InputBatch(arma::cube *, arma::mat *);
     void free();
 
     ~InputBatch();  

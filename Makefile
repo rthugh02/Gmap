@@ -8,9 +8,9 @@ LIB		:= lib
 
 LIBRARIES	:= -DARMA_DONT_USE_WRAPPER -lopenblas -llapack -lpthread
 ifeq ($(OS),Windows_NT)
-EXECUTABLE	:= main.exe
+EXECUTABLE	:= Gmap.exe
 else
-EXECUTABLE	:= main
+EXECUTABLE	:= Gmap
 endif
 
 all: $(BIN)/$(EXECUTABLE)

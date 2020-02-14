@@ -79,6 +79,7 @@ std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
 
+
 int main() {
 	
 	//Random seed for initializing weights
@@ -141,7 +142,7 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 		
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
-		//feed forward process
+
 		feed_forward(next, layer1, layer2, layer3);
 		next->free();
 		std::cout << "consuming item " << ++batch_count << " from queue" << std::endl;
@@ -151,14 +152,15 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 //TODO: add bias to this process
 void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3)
 {
+	
 	//Process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
-	batch_normalization(input->data);
-	*(input->data) = *(input->data) * *(layer1);
-	activation_function(input->data, "relu");
-	*(input->data) = *(input->data) * *(layer2);
-	activation_function(input->data, "relu");
-	*(input->data) = *(input->data) * *(layer3);
-	activation_function(input->data, "softmax");
+	//batch_normalization(input->data);
+	//*(input->data) = *(input->data) * *(layer1);
+	//activation_function(input->data, "relu");
+	//*(input->data) = *(input->data) * *(layer2);
+	//activation_function(input->data, "relu");
+	//*(input->data) = *(input->data) * *(layer3);
+	//activation_function(input->data, "softmax");
 }
 
 //TODO: Make sure to review softmax code for correctness
@@ -183,12 +185,12 @@ void activation_function(arma::mat * input, const char * function)
 		//subtracting max value of each row from each value in the row to prevent extremely large exponentiation
 		*(input) -= max_subtractor;
 
-		input->print("submax:");
+		//input->print("submax:");
 
 		//exponentiating data to start softmax 
 		input->transform([] (double val) { return exp(val); } );
 
-		input->print("exponentiate:");
+		//input->print("exponentiate:");
 		//summation of each exponentiated row
 		arma::colvec row_summation = arma::sum(*input, 1);
 		
@@ -200,7 +202,7 @@ void activation_function(arma::mat * input, const char * function)
 
 		*(input) %= (1 / sum_multiplier);
 
-		input->print("output:");
+		//input->print("output:");
 		
 	}
 }
@@ -230,18 +232,20 @@ void convert_data(std::vector<std::string> files)
 	//JSON parser
 	rapidjson::Document document;
 	int row_counter = 0;
-	std::vector<arma::rowvec> row_buffer;
+
+	std::vector<arma::mat> song_buffer;
 	std::vector<arma::rowvec> genre_buffer; 
 
 	//closure for creating batch of song data and enqueueing 
 	auto build_batch = [&]() {
 			row_counter = 0;
-			//matrix holding batches of song data
-			arma::mat * input_batch = new arma::mat(0, INPUT_COUNT);
+
+			//song batch data
+			arma::cube * input_batch = new arma::cube(DATA_ROWS, DATA_ROW_LENGTH, INPUT_BATCH_SIZE);
 			arma::mat * correct_output = new arma::mat(0, OUTPUT_COUNT);
-			for(auto it = row_buffer.begin(); it != row_buffer.end(); it++)
+			for(auto it = song_buffer.begin(); it != song_buffer.end(); it++)
 			{
-				input_batch->insert_rows(row_counter, *it);
+				input_batch->slice(row_counter) = *it;
 				correct_output->insert_rows(row_counter, genre_buffer[row_counter]);
 				row_counter++;
 			}
@@ -251,14 +255,12 @@ void convert_data(std::vector<std::string> files)
 			cond.notify_one();
 			queue_mutex.unlock();
 
-			row_buffer.clear();
+			song_buffer.clear();
 			genre_buffer.clear();
 			row_counter = 0;
 	};
-
 	for(const auto & file : files)
 	{
-
 		if(row_counter < INPUT_BATCH_SIZE)
 		{
 			//Reading song data into string
@@ -270,10 +272,11 @@ void convert_data(std::vector<std::string> files)
 			document.Parse(content.c_str());
 			auto raw_data = document["data"].GetArray();
 			auto genre = document["genre"].GetString();
-			std::vector<double> temp;
 
+			arma::mat spectogram_data(0, DATA_ROW_LENGTH);
 			for(rapidjson::SizeType i = 0; i < raw_data.Size(); i++) 
     		{
+				std::vector<double> temp;
 				int inner_row_count = 0;
         		rapidjson::Value& row = raw_data[i];
         		for(rapidjson::SizeType j = 0; j < row.Size(); j++)
@@ -286,17 +289,17 @@ void convert_data(std::vector<std::string> files)
 					temp.push_back(0);
 					inner_row_count++;
 				}
+				spectogram_data.insert_rows((int)i, arma::rowvec(temp));
     		}
-			
-			row_buffer.push_back(temp);
+
+			song_buffer.push_back(spectogram_data);
 			genre_buffer.push_back(genre_to_output(genre));
 			row_counter++;
 		}
-		else	
+		else
 			build_batch();
+		
 	}
-	if(row_counter > 0)
-		build_batch();
 	
 	finish_mutex.lock();
 	unfinished_threads--;
