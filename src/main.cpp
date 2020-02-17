@@ -42,7 +42,7 @@ arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
 void feed_forward(InputBatch *, std::vector<arma::mat *>, arma::mat *);
 void activation_function(arma::mat *, const char *);
-void batch_normalization(arma::mat *);
+void batch_normalization(arma::cube *);
 
 //*****************************//
 //*********CONSTANTS***********//
@@ -171,8 +171,6 @@ void convolution(arma::cube * data, arma::mat * kernel)
 {
 	// process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
 	
-	arma::mat temp[INPUT_BATCH_SIZE];
-	
 	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
@@ -212,6 +210,8 @@ void convolution(arma::cube * data, arma::mat * kernel)
 		data->slice(slice) = convoluted_vectors;
 		activation_function(&data->slice(slice), "relu");
 	}
+	batch_normalization(data);
+
 }
 
 //TODO: Make sure to review softmax code for correctness
@@ -259,18 +259,18 @@ void activation_function(arma::mat * input, const char * function)
 
 //TODO: Add in gamma and beta scale/shift values that can be trained
 //Normalization such that norm(val) = (val - mean) / sqrt(variance + er)
-void batch_normalization(arma::mat * batch) 
+void batch_normalization(arma::cube * batch) 
 {
-	arma::rowvec feature_means = arma::sum(*batch, 0) / batch->n_rows;
-	arma::rowvec feature_variances = arma::sum(
-		(batch->each_row() - feature_means).transform([] (double val) { return val*val; } ), 0) / batch->n_rows; 
+	arma::mat feature_means = arma::mean(*batch, 2);
+	arma::mat feature_variances = arma::sum(
+		(batch->each_slice() - feature_means).transform([] (double val) { return val*val; } ), 2) / batch->n_rows; 
 	
 	//denominator of normalization formula
 	feature_variances.transform([] (double val) { return sqrt(val + 0.0001); } );
 	//subtracting means for numerator
-	batch->each_row() -= feature_means;
+	batch->each_slice() -= feature_means;
 	//normalized values
-	batch->each_row() %= (1 / (feature_variances));
+	batch->each_slice() %= (1 / (feature_variances));
 }
 
 /*files assigned to thread are parsed and used to create matrix rows that are inserted into
