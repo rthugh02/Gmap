@@ -82,8 +82,8 @@ std::condition_variable cond;
 std::queue<InputBatch *> input_queue;
 
 
-int main() {
-	
+int main() 
+{
 	//Random seed for initializing weights
 	std::random_device rd;
 	
@@ -161,9 +161,7 @@ void train(std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 //TODO: add bias to this process
 void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 {
-	
-	//Process: (1D convolution -> ReLu -> Batch normalization -> maxpooling) -> LSTM -> dense -> output
-
+	//Process: convolution -> LSTM -> dense -> output
 	convolution(input->data, kernel);
 
 	//activation_function(input->data, "softmax");
@@ -171,22 +169,47 @@ void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, ar
 
 void convolution(arma::cube * data, arma::mat * kernel)
 {
+	// process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
 	
-	//Kernel applied to each song will be a matrix rows = 128 and variable columns
-	//each row of the kernel will perform Hadamard product with the sub-row of the input
-	//These values will be added together to produce a value in the centered column of the output
-	//padding will be applied to left and right side as equally as possible equal to kernel_width - 1
-
+	arma::mat temp[INPUT_BATCH_SIZE];
+	
 	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
-		//apply padding vectors
-
-		//calculate convoluted vector
-		//for(int j = 0; j < DATA_ROW_LENGTH; j++)
-		//{
-		//	arma::mat convolving_vectors = data->slice(slice).submat()
-		//} 
+		arma::mat convoluted_vectors(data->n_rows, data->n_cols);
+		
+		//calculate convoluted vectors centered around each column of the matrix
+		for(arma::uword j = 0; j < DATA_ROW_LENGTH; j++)
+		{
+			arma::mat sub_mat;
+			
+			//apply padding vectors on the left-most part of the X-axis
+			if(j < ((KERNEL_WIDTH - 1) / 2))
+			{
+				int padding, index = 0;
+				for(padding = j; padding < ((KERNEL_WIDTH - 1) / 2); padding++)
+					sub_mat.insert_cols(index++,arma::colvec(data->n_rows, arma::fill::zeros));
+				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
+					sub_mat.insert_cols(index++, data->slice(slice).col(remaining++));
+			}
+			//apply padding vectors to right-most part of the X-axis
+			else if(j >= data->n_cols - ((KERNEL_WIDTH - 1) / 2))
+			{
+				int index = 0;
+				for(arma::uword adding = (j - ((KERNEL_WIDTH - 1) / 2)); adding < data->n_cols; adding++)
+					sub_mat.insert_cols(index++, data->slice(slice).col(adding));
+				for(; index < KERNEL_WIDTH; index++)
+					sub_mat.insert_cols(index,arma::colvec(data->n_rows, arma::fill::zeros));
+			}
+			//no padding needed
+			else
+			{
+				sub_mat = data->slice(slice).cols(j - ((KERNEL_WIDTH - 1) / 2), j + ((KERNEL_WIDTH - 1) / 2) );
+			}
+			
+			convoluted_vectors.col(j) = arma::sum( (sub_mat % *(kernel)) , 1);
+		}
+		data->slice(slice) = convoluted_vectors;
 	}
 }
 
