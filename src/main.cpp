@@ -36,7 +36,7 @@
 //*****************************//
 
 void convolution(arma::cube *, arma::mat *);
-void max_pooling(arma::cube *);
+void max_pooling(arma::cube *, int);
 void train(std::vector<arma::mat *>, arma::mat *);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
@@ -170,13 +170,13 @@ void convolution(arma::cube * data, arma::mat * kernel)
 {
 	// process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
 	
-	//for each song in the batch
+	//1D convolution and ReLu
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
 		arma::mat convoluted_vectors(data->n_rows, data->n_cols);
 
 		//calculate convoluted vectors centered around each column of the matrix
-		for(arma::uword j = 0; j < DATA_ROW_LENGTH; j++)
+		for(arma::uword j = 0; j < data->n_cols; j++)
 		{
 			arma::mat sub_mat;
 			
@@ -203,19 +203,42 @@ void convolution(arma::cube * data, arma::mat * kernel)
 			{
 				sub_mat = data->slice(slice).cols(j - ((KERNEL_WIDTH - 1) / 2), j + ((KERNEL_WIDTH - 1) / 2) );
 			}
-			
+
 			convoluted_vectors.col(j) = arma::sum( (sub_mat % *(kernel)) , 1);
 		}
 		data->slice(slice) = convoluted_vectors;
 		activation_function(&data->slice(slice), "relu");
 	}
 	batch_normalization(data);
-
+	max_pooling(data, 2);
 }
 
-void max_pooling(arma::cube * data)
+void max_pooling(arma::cube * data, int step)
 {
+	arma::mat temp[INPUT_BATCH_SIZE];
+
+	int new_column_size = 0;
+	//for each song in the batch
+	for(arma::uword slice = 0; slice < data->n_slices; slice++)
+	{
+		arma::mat pooled_song;
+		int index = 0;
+		//pooling based on step size for no overlap
+		for(arma::uword j = 0; j < data->n_cols; j+= step)
+		{
+			pooled_song.insert_cols(index++ ,
+			(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
+		}
+		//storing new column size and each pooled entry
+		new_column_size = pooled_song.n_cols;
+		temp[slice] = pooled_song;
+	}
+	//setting size of data post max-pooling
+	data->set_size(DATA_ROWS, new_column_size, INPUT_BATCH_SIZE);
 	
+	//re-assigning data with calculated max-pools
+	for(arma::uword i = 0; i < data->n_slices; i++)
+		data->slice(i) = temp[i];
 }
 
 //TODO: Make sure to review softmax code for correctness
