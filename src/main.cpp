@@ -36,6 +36,7 @@
 //*****************************//
 
 void convolution(arma::cube *, arma::mat *);
+void max_pooling(arma::cube *);
 void train(std::vector<arma::mat *>, arma::mat *);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
@@ -61,8 +62,6 @@ const int LAYER_ONE_INPUT = 64;
 const int LAYER_TWO_INPUT = 32;
 //Output Neurons, there are 8 genre classifications
 const int OUTPUT_COUNT = 8;
-//min(-) max(+) possible weight
-const double MAX_WEIGHT = .55;
 //number of threads to use for parsing files
 const int THREAD_COUNT = 11;
 
@@ -212,6 +211,11 @@ void convolution(arma::cube * data, arma::mat * kernel)
 	}
 	batch_normalization(data);
 
+}
+
+void max_pooling(arma::cube * data)
+{
+	
 }
 
 //TODO: Make sure to review softmax code for correctness
