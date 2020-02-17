@@ -36,11 +36,11 @@
 //*****************************//
 
 void convolution(arma::cube *, arma::mat *);
-void train(arma::mat *, arma::mat *, arma::mat *, arma::mat *);
+void train(std::vector<arma::mat *>, arma::mat *);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-void feed_forward(InputBatch *, arma::mat *, arma::mat *, arma::mat *, arma::mat *);
+void feed_forward(InputBatch *, std::vector<arma::mat *>, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::mat *);
 
@@ -51,14 +51,14 @@ void batch_normalization(arma::mat *);
 //Batch size of calculations that will be done for back propogation
 const int INPUT_BATCH_SIZE = 50;
 //Input Neurons
-const int INPUT_COUNT = 165632; //Max dimensions 128 X 1294
+const int INPUT_COUNT = 1294; //This will be determined after maxpooling is finished
 const int DATA_ROWS = 128;
 const int DATA_ROW_LENGTH = 1294;
 const int KERNEL_WIDTH = 3;
 //Number of neurons in first hidden layer
-const int LAYER_ONE_INPUT = 24;
+const int LAYER_ONE_INPUT = 64;
 //Number of neurons in second hidden layer
-const int LAYER_TWO_INPUT = 12;
+const int LAYER_TWO_INPUT = 32;
 //Output Neurons, there are 8 genre classifications
 const int OUTPUT_COUNT = 8;
 //min(-) max(+) possible weight
@@ -113,8 +113,12 @@ int main() {
 	//threads that will parse song_data directory and generate input data for NN
 	std::vector<std::thread> directory_threads;
 
+	std::vector<arma::mat *> dense_weights;
+	dense_weights.push_back(weights1);
+	dense_weights.push_back(weights2);
+	dense_weights.push_back(weights3);
 	//thread dedicated to feed-forward/back-propogation of NN
-	std::thread train_thread(train, weights1, weights2, weights3, kernel);
+	std::thread train_thread(train, dense_weights, kernel);
 	
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
@@ -134,7 +138,7 @@ int main() {
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
-void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3, arma::mat * kernel)
+void train(std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 {
 	//while there are directory threads still doing work
 	int batch_count = 0;
@@ -148,30 +152,26 @@ void train(arma::mat * layer1, arma::mat * layer2, arma::mat * layer3, arma::mat
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		feed_forward(next, layer1, layer2, layer3, kernel);
+		feed_forward(next, dense_weights, kernel);
 		next->free();
 		std::cout << "consuming item " << ++batch_count << " from queue" << std::endl;
 	}
 }
 
 //TODO: add bias to this process
-void feed_forward(InputBatch * input, arma::mat * layer1, arma::mat * layer2, arma::mat * layer3, arma::mat * kernel)
+void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 {
 	
 	//Process: (1D convolution -> ReLu -> Batch normalization -> maxpooling) -> LSTM -> dense -> output
 
 	convolution(input->data, kernel);
-	//batch_normalization(input->data);
-	//*(input->data) = *(input->data) * *(layer1);
-	//activation_function(input->data, "relu");
-	//*(input->data) = *(input->data) * *(layer2);
-	//activation_function(input->data, "relu");
-	//*(input->data) = *(input->data) * *(layer3);
+
 	//activation_function(input->data, "softmax");
 }
 
 void convolution(arma::cube * data, arma::mat * kernel)
 {
+	
 	//Kernel applied to each song will be a matrix rows = 128 and variable columns
 	//each row of the kernel will perform Hadamard product with the sub-row of the input
 	//These values will be added together to produce a value in the centered column of the output
