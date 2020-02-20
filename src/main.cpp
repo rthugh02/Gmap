@@ -33,6 +33,7 @@
 //*****************************//
 
 void convolution(arma::cube *, arma::mat *);
+void LSTM(arma::cube *);
 void max_pooling(arma::cube *, int);
 void train(std::vector<arma::mat *>, arma::mat *);
 void convert_data(std::vector<std::string>);
@@ -160,6 +161,7 @@ void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, ar
 	//Process: convolution -> LSTM -> dense -> output
 	convolution(input->data, kernel);
 
+
 	//activation_function(input->data, "softmax");
 }
 
@@ -236,6 +238,18 @@ void max_pooling(arma::cube * data, int step)
 	//re-assigning data with calculated max-pools
 	for(arma::uword i = 0; i < data->n_slices; i++)
 		data->slice(i) = temp[i];
+}
+
+/*
+Notes on LSTM:
+
+LSTM layers are not densely connected LSTM cells, each cell operates on itself in a loop
+an LSTM layer accepts all the inputs from the layer leading into it
+View the graph in this link for conceptual view: https://stackoverflow.com/questions/51452579/how-to-flatten-the-rnn-output-for-dense-layer
+*/
+void LSTM(arma::cube * data)
+{
+
 }
 
 //TODO: Make sure to review softmax code for correctness
@@ -372,13 +386,15 @@ void convert_data(std::vector<std::string> files)
 			row_counter++;
 		}
 		else
-			build_batch();
-		
+			build_batch();	
 	}
+	if(row_counter > 0)
+		build_batch();
 	
 	finish_mutex.lock();
 	unfinished_threads--;
 	finish_mutex.unlock();
+	std::cout << "thread finished.." << std::endl;
 }
 
 /*
