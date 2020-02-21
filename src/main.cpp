@@ -78,7 +78,6 @@ std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
 
-
 int main() 
 {
 	//Random seed for initializing weights
@@ -245,7 +244,16 @@ Notes on LSTM:
 
 LSTM layers are not densely connected LSTM cells, each cell operates on itself in a loop
 an LSTM layer accepts all the inputs from the layer leading into it
-View the graph in this link for conceptual view: https://stackoverflow.com/questions/51452579/how-to-flatten-the-rnn-output-for-dense-layer
+View the graph in this link for conceptual view: https://www.quora.com/In-LSTM-how-do-you-figure-out-what-size-the-weights-are-supposed-to-be
+
+Plan:
+- Input Batch data cube structure is passed to LSTM
+- each top to bottom slice of the cube, representing the song batches divided by their mel data, 
+  will be passed to an LSTM unit
+- these slices in their individual LSTM units will be divided into T submatrices 
+  and passed to the corresponding connected cells within the LSTM unit
+- The outputs will then be calculated and concatenated and replace its corresponding slice in the batch
+
 */
 void LSTM(arma::cube * data)
 {
@@ -259,6 +267,10 @@ void activation_function(arma::mat * input, const char * function)
 		input->transform([] (double val) { return std::max(0.0, val); } );
 	else if(strcmp("leakyrelu", function) == 0)
 		input->transform([] (double val) { return (val < 0) ? 0.01*val : val; } );
+	else if(strcmp("sigmoid", function) == 0)
+		input->transform([] (double val) { return (1 / (1 + exp(-val))); } );
+	else if(strcmp("tanh", function) == 0)
+		input->transform([] (double val) { return (exp(val) - exp(-val)) / (exp(val) + exp(-val)) ; } );
 	else if(strcmp("softmax", function) == 0)
 	{
 
