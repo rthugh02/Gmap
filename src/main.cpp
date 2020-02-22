@@ -34,7 +34,7 @@
 //*****************************//
 
 void convolution(arma::cube *, arma::mat *);
-void LSTM(arma::cube *);
+void LSTM(arma::cube *, int);
 void max_pooling(arma::cube *, int);
 void train(std::vector<arma::mat *>, arma::mat *);
 void convert_data(std::vector<std::string>);
@@ -78,7 +78,8 @@ std::mutex finish_mutex;
 std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
-
+//LSTM_cells for each mel-spec row
+std::vector<LSTMCell> LSTM_cells;
 int main() 
 {
 	//Random seed for initializing weights
@@ -160,7 +161,7 @@ void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, ar
 {
 	//Process: convolution -> LSTM -> dense -> output
 	convolution(input->data, kernel);
-
+	LSTM(input->data, 6);
 
 	//activation_function(input->data, "softmax");
 }
@@ -256,9 +257,15 @@ Plan:
 - The outputs will then be calculated and concatenated and replace its corresponding slice in the batch
 
 */
-void LSTM(arma::cube * data)
+void LSTM(arma::cube * data, int timesteps)
 {
-
+	
+	int split_column_width = data->n_cols / timesteps;
+	for(int i = 0; i < DATA_ROWS; i++)
+	{
+		arma::mat row_slice = data->tube(i, 0, i, data->n_cols - 1);
+		LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
+	}
 }
 
 //TODO: Make sure to review softmax code for correctness

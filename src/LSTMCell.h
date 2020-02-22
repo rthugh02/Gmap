@@ -15,8 +15,11 @@ class LSTMCell
     arma::mat prevo_weights;
     arma::mat datac_weights;
     arma::mat prevc_weights;
+
+    //input data for the cell
+    arma::mat row_slice;
     public:
-        LSTMCell(int, int, int);
+        LSTMCell(arma::mat row_slice, int batch_size, int cols, int hidden_units);
         ~LSTMCell();
 };
 

@@ -1,10 +1,10 @@
 #include "LSTMCell.h"
 #include <armadillo>
 
-LSTMCell::LSTMCell(int batch_size, int cols, int hidden_units)
+LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int cols, int hidden_units)
 {
     std::random_device rd;
-	
+	this->row_slice = row_slice;
 	//Uniform distribution of real numbers
 	std::normal_distribution<double> distr(0, 1);
     std::mt19937 engine(rd());
