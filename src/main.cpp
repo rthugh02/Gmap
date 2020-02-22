@@ -269,7 +269,11 @@ void LSTM(arma::cube * data, int timesteps)
 	{
 		arma::mat row_slice = data->tube(i, 0, i, data->n_cols - 1);
 		arma::inplace_trans(row_slice);
-		LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
+		if(LSTM_cells.size() < DATA_ROWS)
+			LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
+		else
+			LSTM_cells[i].set_data(row_slice);
+		data->tube(i, 0, i, data->n_cols - 1) = LSTM_cells[i].calculate_output(activation_function);
 	}
 }
 

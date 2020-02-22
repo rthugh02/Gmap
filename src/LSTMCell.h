@@ -21,6 +21,9 @@ class LSTMCell
     public:
         LSTMCell(arma::mat row_slice, int batch_size, int cols, int hidden_units);
         ~LSTMCell();
+
+        void set_data(arma::mat row_slice);
+        arma::mat calculate_output(void (*)(arma::mat *, const char *));
 };
 
 #endif

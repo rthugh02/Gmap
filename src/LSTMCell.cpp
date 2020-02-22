@@ -35,6 +35,16 @@ LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int cols, int hidden_uni
     engine.seed(rd());
 }
 
+void LSTMCell::set_data(arma::mat row_slice)
+{
+    this->row_slice = row_slice;
+}
+
+arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const char *))
+{
+
+}
+
 LSTMCell::~LSTMCell()
 {
 
