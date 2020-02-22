@@ -276,6 +276,7 @@ void LSTM(arma::cube * data, int timesteps)
 	//TODO: We want column width to be the same size as timesteps, since LSTM output
 	//column width will be the timestep size and we aren't trying to predict the next data
 	//values in each vector, just transform them
+	arma::mat temp[DATA_ROWS];
 	int split_column_width = data->n_cols / timesteps;
 	for(int i = 0; i < DATA_ROWS; i++)
 	{
@@ -285,8 +286,11 @@ void LSTM(arma::cube * data, int timesteps)
 			LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
 		else
 			LSTM_cells[i].set_data(row_slice);
-		data->tube(i, 0, i, data->n_cols - 1) = LSTM_cells[i].calculate_output(activation_function);
+		temp[i] = LSTM_cells[i].calculate_output(activation_function);
 	}
+	data->set_size(DATA_ROWS, temp[0].n_cols, INPUT_BATCH_SIZE);
+	for(int i = 0; i < DATA_ROWS; i++)
+		data->tube(i, 0, i, data->n_cols - 1) = temp[i].t();
 }
 
 //TODO: Make sure to review softmax code for correctness
