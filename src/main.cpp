@@ -11,6 +11,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "InputBatch.h"
+#include "LSTMCell.h"
 /*
 	TROUBLESHOOTING:
 
