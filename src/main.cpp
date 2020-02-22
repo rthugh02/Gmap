@@ -226,8 +226,12 @@ void max_pooling(arma::cube * data, int step)
 		//pooling based on step size for no overlap
 		for(arma::uword j = 0; j < data->n_cols; j+= step)
 		{
-			pooled_song.insert_cols(index++ ,
-			(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
+			if(j + step - 1 > data->n_cols)
+				pooled_song.insert_cols(index++ ,
+				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
+			else	
+				pooled_song.insert_cols(index++ ,
+				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
@@ -264,6 +268,7 @@ void LSTM(arma::cube * data, int timesteps)
 	for(int i = 0; i < DATA_ROWS; i++)
 	{
 		arma::mat row_slice = data->tube(i, 0, i, data->n_cols - 1);
+		arma::inplace_trans(row_slice);
 		LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
 	}
 }
