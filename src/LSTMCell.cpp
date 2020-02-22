@@ -8,7 +8,7 @@ LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int features, int hidden
     this->hidden_units = hidden_units;
     this->batch_size = batch_size;
     this->features = features;
-    
+
     split_row_slice(row_slice);
 	//Uniform distribution of real numbers
 	std::normal_distribution<double> distr(0, 1);
@@ -48,19 +48,40 @@ void LSTMCell::set_data(arma::mat row_slice)
 
 void LSTMCell::split_row_slice(arma::mat row_slice)
 {
-    for(int i = 0; i < hidden_units; i+=features)
+    for(arma::uword i = 0; i < row_slice.n_cols; i+=features)
     {
-        sub_mats.emplace_back(row_slice.submat(0, i, batch_size - 1, i + features - 1));
+        auto temp = row_slice.submat(0, i, batch_size - 1, i + features - 1);
+        sub_mats.emplace_back(temp);
     }
 }
 
 arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const char *))
 {
-    arma::mat prev = arma::zeros<arma::mat>(batch_size, hidden_units);
+    arma::mat out = arma::zeros<arma::mat>(batch_size, hidden_units);
+    arma::mat cell_state = arma::zeros<arma::mat>(batch_size, hidden_units);
     for(int i = 0; i < hidden_units; i++)
     {
-        //arma::mat forget_input = 
+        arma::mat forget_gate = (sub_mats[i] * dataf_weights) + (out * prevf_weights);
+        activation_func(&forget_gate, "sigmoid");
+
+        arma::mat input_gate = (sub_mats[i] * datai_weights) + (out * previ_weights);
+        activation_func(&input_gate, "sigmoid");
+
+        arma::mat output_gate = (sub_mats[i] * datao_weights) + (out * prevo_weights);
+        activation_func(&output_gate, "sigmoid");
+
+        arma::mat cell_temp = (sub_mats[i] * datac_weights) + (out * prevc_weights);
+        activation_func(&cell_temp, "tanh");
+
+        cell_state = (forget_gate % cell_state) + (input_gate % cell_temp);
+        
+        arma::mat cell_state_tanh = cell_state;
+        activation_func(&cell_state_tanh, "tanh");
+
+        out = (output_gate % cell_state_tanh); 
     }
+
+    return out;
 }
 
 LSTMCell::~LSTMCell()

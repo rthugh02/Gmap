@@ -160,8 +160,9 @@ void train(std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 {
 	//Process: convolution -> LSTM -> dense -> output
-	convolution(input->data, kernel);
-	LSTM(input->data, 12);
+	for(int i = 0; i < 3; i++)
+		convolution(input->data, kernel);
+	LSTM(input->data, 27);
 
 	//activation_function(input->data, "softmax");
 }
@@ -226,12 +227,21 @@ void max_pooling(arma::cube * data, int step)
 		//pooling based on step size for no overlap
 		for(arma::uword j = 0; j < data->n_cols; j+= step)
 		{
-			if(j + step - 1 > data->n_cols)
+			if(j + step > data->n_cols - 1)
+			{
+				//std::cout << "overstep: " << std::endl;
+				//std::cout << "submat: 0, " << j << ", " << DATA_ROWS - 1 << ", " << data->n_cols - 1 << std::endl;  
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
-			else	
+			}
+				
+			else
+			{
+				//std::cout << "submat: 0, " << j << ", " << DATA_ROWS - 1 << ", " << j + step - 1 << std::endl;  
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
+			}	
+				
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
