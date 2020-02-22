@@ -161,7 +161,7 @@ void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, ar
 {
 	//Process: convolution -> LSTM -> dense -> output
 	convolution(input->data, kernel);
-	LSTM(input->data, 6);
+	LSTM(input->data, 12);
 
 	//activation_function(input->data, "softmax");
 }
@@ -263,7 +263,9 @@ Plan:
 */
 void LSTM(arma::cube * data, int timesteps)
 {
-	
+	//TODO: We want column width to be the same size as timesteps, since LSTM output
+	//column width will be the timestep size and we aren't trying to predict the next data
+	//values in each vector, just transform them
 	int split_column_width = data->n_cols / timesteps;
 	for(int i = 0; i < DATA_ROWS; i++)
 	{
@@ -302,12 +304,9 @@ void activation_function(arma::mat * input, const char * function)
 		//subtracting max value of each row from each value in the row to prevent extremely large exponentiation
 		*(input) -= max_subtractor;
 
-		//input->print("submax:");
-
 		//exponentiating data to start softmax 
 		input->transform([] (double val) { return exp(val); } );
 
-		//input->print("exponentiate:");
 		//summation of each exponentiated row
 		arma::colvec row_summation = arma::sum(*input, 1);
 		
@@ -316,11 +315,7 @@ void activation_function(arma::mat * input, const char * function)
 		for(arma::uword i = 0; i < input->n_cols; i++)
 			sum_multiplier.insert_cols(i, row_summation);
 		
-
 		*(input) %= (1 / sum_multiplier);
-
-		//input->print("output:");
-		
 	}
 }
 
