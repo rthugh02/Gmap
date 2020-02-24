@@ -17,7 +17,7 @@ public:
     DenseNetwork(arma::cube * data);
     ~DenseNetwork();
 
-    arma::mat calculate_output(void (*activation_func)(arma::mat *, const char *));
+    arma::mat calculate_output(void (*activation_func)(arma::mat *, const char *), void (*batch_norm)(arma::mat *));
     void set_data(arma::cube * data);
 };
 

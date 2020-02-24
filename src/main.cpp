@@ -45,6 +45,7 @@ const char * output_to_genre(arma::rowvec);
 void feed_forward(InputBatch *, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::cube *);
+void batch_normalization_mat(arma::mat *); 
 
 //*****************************//
 //*********CONSTANTS***********//
@@ -283,7 +284,7 @@ arma::mat dense_layer(arma::cube * data)
 		dense_network = new DenseNetwork(data);
 	else
 		dense_network->set_data(data);
-	return dense_network->calculate_output(activation_function);
+	return dense_network->calculate_output(activation_function, batch_normalization_mat);
 	
 }
 
@@ -343,7 +344,7 @@ void batch_normalization(arma::cube * batch)
 	batch->each_slice() %= (1 / (feature_variances));
 }
 
-void batch_normalization(arma::mat * batch) 
+void batch_normalization_mat(arma::mat * batch) 
 {
 	arma::rowvec feature_means = arma::mean(*batch, 0);
 	arma::rowvec feature_variances = arma::sum(
