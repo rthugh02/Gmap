@@ -7,6 +7,7 @@
 #include <random>
 #include <thread>
 #include <condition_variable>
+#include <algorithm>
 #include <armadillo>
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
@@ -100,13 +101,19 @@ int main()
 	//thread dedicated to feed-forward/back-propogation of NN
 	std::thread train_thread(train, kernel);
 	
+	//getting all file paths and randomly shuffling them
+	std::vector<std::string> all_files;
+	for(const auto & file : std::filesystem::directory_iterator("song_data/"))
+		all_files.push_back(file.path().string());
+	std::shuffle(std::begin(all_files), std::end(all_files), rd);
+
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
 	std::vector<std::string> thread_tasks[THREAD_COUNT];
-	//assigning each file to a thread
-	for(const auto & file : std::filesystem::directory_iterator("song_data/"))
-		thread_tasks[song_count++ % THREAD_COUNT].push_back(file.path().string());
-	
+
+	for(auto file : all_files)
+		thread_tasks[song_count++ % THREAD_COUNT].push_back(file);
+
 	//launching threads for converting song_data files
 	for(auto & task : thread_tasks)
 		directory_threads.emplace_back(convert_data, task);
