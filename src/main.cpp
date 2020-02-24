@@ -153,7 +153,7 @@ void feed_forward(InputBatch * input, arma::mat * kernel)
 		convolution(input->data, kernel);
 	
 	LSTM(input->data, 27);
-
+	//input->data->slice(0).print("post LSTM:");
 	arma::mat prediction = dense_layer(input->data);
 	
 	prediction.print("prediction:");
@@ -273,6 +273,8 @@ void LSTM(arma::cube * data, int timesteps)
 	data->set_size(DATA_ROWS, temp[0].n_cols, INPUT_BATCH_SIZE);
 	for(int i = 0; i < DATA_ROWS; i++)
 		data->tube(i, 0, i, data->n_cols - 1) = temp[i].t();
+
+	batch_normalization(data);
 }
 
 arma::mat dense_layer(arma::cube * data)
@@ -339,6 +341,20 @@ void batch_normalization(arma::cube * batch)
 	batch->each_slice() -= feature_means;
 	//normalized values
 	batch->each_slice() %= (1 / (feature_variances));
+}
+
+void batch_normalization(arma::mat * batch) 
+{
+	arma::rowvec feature_means = arma::mean(*batch, 0);
+	arma::rowvec feature_variances = arma::sum(
+		(batch->each_row() - feature_means).transform([] (double val) { return val*val; } ), 0) / batch->n_rows; 
+	
+	//denominator of normalization formula
+	feature_variances.transform([] (double val) { return sqrt(val + 0.0001); } );
+	//subtracting means for numerator
+	batch->each_row() -= feature_means;
+	//normalized values
+	batch->each_row() %= (1 / (feature_variances));
 }
 
 /*files assigned to thread are parsed and used to create matrix rows that are inserted into
