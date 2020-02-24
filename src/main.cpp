@@ -12,6 +12,7 @@
 #include "rapidjson/filereadstream.h"
 #include "InputBatch.h"
 #include "LSTMCell.h"
+#include "DenseNetwork.h"
 /*
 	TROUBLESHOOTING:
 
@@ -35,12 +36,13 @@
 
 void convolution(arma::cube *, arma::mat *);
 void LSTM(arma::cube *, int);
+void dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
-void train(std::vector<arma::mat *>, arma::mat *);
+void train(arma::mat *);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-void feed_forward(InputBatch *, std::vector<arma::mat *>, arma::mat *);
+void feed_forward(InputBatch *, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::cube *);
 
@@ -80,6 +82,9 @@ std::condition_variable cond;
 std::queue<InputBatch *> input_queue;
 //LSTM_cells for each mel-spec row
 std::vector<LSTMCell> LSTM_cells;
+
+DenseNetwork dense_network;
+
 int main() 
 {
 	//Random seed for initializing weights
@@ -116,7 +121,7 @@ int main()
 	dense_weights.push_back(weights2);
 	dense_weights.push_back(weights3);
 	//thread dedicated to feed-forward/back-propogation of NN
-	std::thread train_thread(train, dense_weights, kernel);
+	std::thread train_thread(train, kernel);
 	
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
@@ -136,7 +141,7 @@ int main()
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
-void train(std::vector<arma::mat *> dense_weights, arma::mat * kernel)
+void train(arma::mat * kernel)
 {
 	//while there are directory threads still doing work
 	int batch_count = 0;
@@ -150,20 +155,22 @@ void train(std::vector<arma::mat *> dense_weights, arma::mat * kernel)
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		feed_forward(next, dense_weights, kernel);
+		feed_forward(next, kernel);
 		next->free();
 		std::cout << "consuming item " << ++batch_count << " from queue" << std::endl;
 	}
 }
 
 //TODO: add bias to this process
-void feed_forward(InputBatch * input, std::vector<arma::mat *> dense_weights, arma::mat * kernel)
+void feed_forward(InputBatch * input, arma::mat * kernel)
 {
 	//Process: convolution -> LSTM -> dense -> output
 	for(int i = 0; i < 3; i++)
 		convolution(input->data, kernel);
+	
 	LSTM(input->data, 27);
 
+	dense_layer(input->data);
 	//activation_function(input->data, "softmax");
 }
 
@@ -229,15 +236,12 @@ void max_pooling(arma::cube * data, int step)
 		{
 			if(j + step > data->n_cols - 1)
 			{
-				//std::cout << "overstep: " << std::endl;
-				//std::cout << "submat: 0, " << j << ", " << DATA_ROWS - 1 << ", " << data->n_cols - 1 << std::endl;  
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
 			}
 				
 			else
 			{
-				//std::cout << "submat: 0, " << j << ", " << DATA_ROWS - 1 << ", " << j + step - 1 << std::endl;  
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
 			}	
@@ -262,14 +266,6 @@ LSTM layers are not densely connected LSTM cells, each cell operates on itself i
 an LSTM layer accepts all the inputs from the layer leading into it
 View the graph in this link for conceptual view: https://www.quora.com/In-LSTM-how-do-you-figure-out-what-size-the-weights-are-supposed-to-be
 
-Plan:
-- Input Batch data cube structure is passed to LSTM
-- each top to bottom slice of the cube, representing the song batches divided by their mel data, 
-  will be passed to an LSTM unit
-- these slices in their individual LSTM units will be divided into T submatrices 
-  and passed to the corresponding connected cells within the LSTM unit
-- The outputs will then be calculated and concatenated and replace its corresponding slice in the batch
-
 */
 void LSTM(arma::cube * data, int timesteps)
 {
@@ -291,6 +287,11 @@ void LSTM(arma::cube * data, int timesteps)
 	data->set_size(DATA_ROWS, temp[0].n_cols, INPUT_BATCH_SIZE);
 	for(int i = 0; i < DATA_ROWS; i++)
 		data->tube(i, 0, i, data->n_cols - 1) = temp[i].t();
+}
+
+void dense_layer(arma::cube * data)
+{
+
 }
 
 //TODO: Make sure to review softmax code for correctness
