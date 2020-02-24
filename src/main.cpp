@@ -50,7 +50,7 @@ void batch_normalization_mat(arma::mat *);
 
 //Batch size of calculations that will be done for back propogation
 const int INPUT_BATCH_SIZE = 50;
-//Input Neurons
+//Data dimensions
 const int DATA_ROWS = 128;
 const int DATA_ROW_LENGTH = 1294;
 const int KERNEL_WIDTH = 3;
@@ -146,7 +146,7 @@ void feed_forward(InputBatch * input, arma::mat * kernel)
 	
 	LSTM(input->data, 27);
 	//input->data->slice(0).print("post LSTM:");
-	arma::mat prediction = dense_layer(input->data);
+	arma::mat predictions = dense_layer(input->data);
 	
 }
 
