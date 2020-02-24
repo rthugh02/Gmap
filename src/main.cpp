@@ -37,10 +37,11 @@ void LSTM(arma::cube *, int);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
 void train(arma::mat *);
+void back_propagation(double);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-void feed_forward(InputBatch *, arma::mat *);
+double feed_forward(InputBatch *, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::cube *);
 void batch_normalization_mat(arma::mat *); 
@@ -139,13 +140,14 @@ void train(arma::mat * kernel)
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		feed_forward(next, kernel);
+		double loss = feed_forward(next, kernel);
 		next->free();
-		std::cout << "consuming item " << ++batch_count << " from queue" << std::endl;
+		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		back_propagation(loss);
 	}
 }
 
-void feed_forward(InputBatch * input, arma::mat * kernel)
+double feed_forward(InputBatch * input, arma::mat * kernel)
 {
 	//Process: convolution -> LSTM -> dense -> output
 	for(int i = 0; i < 3; i++)
@@ -155,6 +157,15 @@ void feed_forward(InputBatch * input, arma::mat * kernel)
 	//input->data->slice(0).print("post LSTM:");
 	arma::mat predictions = dense_layer(input->data);
 	
+	//calculating categorical cross entropy cost
+	predictions.transform([&] (double val) { return log(val); });
+	predictions %= *(input->genres);
+
+	double loss = -arma::mean(
+		arma::sum(predictions, 1)
+	);
+
+	return loss;
 }
 
 void convolution(arma::cube * data, arma::mat * kernel)
@@ -277,6 +288,11 @@ arma::mat dense_layer(arma::cube * data)
 	else
 		dense_network->set_data(data);
 	return dense_network->calculate_output(activation_function, batch_normalization_mat);
+	
+}
+
+void back_propagation(double loss)
+{
 	
 }
 
