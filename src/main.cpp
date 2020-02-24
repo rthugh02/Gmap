@@ -22,11 +22,8 @@
 	TODO AND NOTES:
 
 	Layers/steps to build:
-	
-	- change dense net matrices to be initialized after convolution to have correct Input settings
-	- Implement LSTM layer
-	- add gamma and beta to batch normalization 
-	- Add bias to dense net
+	- add gamma and beta to batch normalization  (is this necessary?)
+	- Add bias to all needed layers
 
 */
 
@@ -54,14 +51,9 @@ void batch_normalization_mat(arma::mat *);
 //Batch size of calculations that will be done for back propogation
 const int INPUT_BATCH_SIZE = 50;
 //Input Neurons
-const int INPUT_COUNT = 1294; //This will be determined after maxpooling is finished
 const int DATA_ROWS = 128;
 const int DATA_ROW_LENGTH = 1294;
 const int KERNEL_WIDTH = 3;
-//Number of neurons in first hidden layer
-const int LAYER_ONE_INPUT = 64;
-//Number of neurons in second hidden layer
-const int LAYER_TWO_INPUT = 32;
 //Output Neurons, there are 8 genre classifications
 const int OUTPUT_COUNT = 8;
 //number of threads to use for parsing files
@@ -146,7 +138,6 @@ void train(arma::mat * kernel)
 	}
 }
 
-//TODO: add bias to this process
 void feed_forward(InputBatch * input, arma::mat * kernel)
 {
 	//Process: convolution -> LSTM -> dense -> output
@@ -157,8 +148,6 @@ void feed_forward(InputBatch * input, arma::mat * kernel)
 	//input->data->slice(0).print("post LSTM:");
 	arma::mat prediction = dense_layer(input->data);
 	
-	prediction.print("prediction:");
-	input->genres->print("actual:");
 }
 
 void convolution(arma::cube * data, arma::mat * kernel)
@@ -231,8 +220,7 @@ void max_pooling(arma::cube * data, int step)
 			{
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
-			}	
-				
+			}					
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
@@ -256,9 +244,6 @@ View the graph in this link for conceptual view: https://www.quora.com/In-LSTM-h
 */
 void LSTM(arma::cube * data, int timesteps)
 {
-	//TODO: We want column width to be the same size as timesteps, since LSTM output
-	//column width will be the timestep size and we aren't trying to predict the next data
-	//values in each vector, just transform them
 	arma::mat temp[DATA_ROWS];
 	int split_column_width = data->n_cols / timesteps;
 	for(int i = 0; i < DATA_ROWS; i++)
@@ -288,7 +273,6 @@ arma::mat dense_layer(arma::cube * data)
 	
 }
 
-//TODO: Make sure to review softmax code for correctness
 void activation_function(arma::mat * input, const char * function)
 {
 	if(strcmp("relu", function) == 0)
