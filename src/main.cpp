@@ -351,20 +351,6 @@ void batch_normalization(arma::cube * batch)
 	batch->each_slice() %= (1 / (feature_variances));
 }
 
-void batch_normalization_mat(arma::mat * batch) 
-{
-	arma::rowvec feature_means = arma::mean(*batch, 0);
-	arma::rowvec feature_variances = arma::sum(
-		(batch->each_row() - feature_means).transform([] (double val) { return val*val; } ), 0) / batch->n_rows; 
-	
-	//denominator of normalization formula
-	feature_variances.transform([] (double val) { return sqrt(val + 0.0001); } );
-	//subtracting means for numerator
-	batch->each_row() -= feature_means;
-	//normalized values
-	batch->each_row() %= (1 / (feature_variances));
-}
-
 /*files assigned to thread are parsed and used to create matrix rows that are inserted into
 matrices of row size INPUT_BATCH_SIZE. These matrices are then enqueued and consumed 
 by the training thread.
