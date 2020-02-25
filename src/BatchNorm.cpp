@@ -5,16 +5,12 @@ BatchNorm::BatchNorm(arma::cube * data)
 {
     this->isCube = true;
     this->cube_data = data;
-    this->shift = 0;
-    this->scale = 1;
 }
 
 BatchNorm::BatchNorm(arma::mat * data)
 {
     this->isCube = false;
     this->mat_data = data;
-    this->shift = 0;
-    this->scale = 1;
 }
 
 void BatchNorm::set_data(arma::cube * data)

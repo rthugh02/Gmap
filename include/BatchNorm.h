@@ -6,8 +6,8 @@ class BatchNorm
 {
 private:
     //trainable gamma and beta values for shifting normalized data
-    double scale;
-    double shift;
+    double scale = 1;
+    double shift = 0;
     arma::cube * cube_data;
     arma::mat * mat_data;
     bool isCube;
