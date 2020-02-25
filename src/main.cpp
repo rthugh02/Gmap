@@ -15,6 +15,7 @@
 #include "Convolution.h"
 #include "LSTMCell.h"
 #include "DenseNetwork.h"
+#include "BatchNorm.h"
 /*
 	TROUBLESHOOTING:
 
@@ -44,7 +45,6 @@ arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
 double feed_forward(InputBatch *);
 void activation_function(arma::mat *, const char *);
-void batch_normalization(arma::cube *);
 
 //*****************************//
 //*********CONSTANTS***********//
@@ -82,6 +82,7 @@ Convolution * convolution_layer2 = NULL;
 Convolution * convolution_layer3 = NULL;
 //LSTM_cells for each mel-spec row
 std::vector<LSTMCell> LSTM_cells;
+BatchNorm * LSTM_batch_norm = NULL;
 //Dense network layer
 DenseNetwork * dense_network = NULL;
 
@@ -209,7 +210,11 @@ void LSTM(arma::cube * data, int timesteps)
 	for(int i = 0; i < DATA_ROWS; i++)
 		data->tube(i, 0, i, data->n_cols - 1) = temp[i].t();
 
-	batch_normalization(data);
+	if(LSTM_batch_norm == NULL)
+		LSTM_batch_norm = new BatchNorm(data);
+	else
+		LSTM_batch_norm->set_data(data);
+	LSTM_batch_norm->normalize();
 }
 
 arma::mat dense_layer(arma::cube * data)
@@ -264,22 +269,6 @@ void activation_function(arma::mat * input, const char * function)
 		
 		*(input) %= (1 / sum_multiplier);
 	}
-}
-
-//TODO: Add in gamma and beta scale/shift values that can be trained
-//Normalization such that norm(val) = (val - mean) / sqrt(variance + er)
-void batch_normalization(arma::cube * batch) 
-{
-	arma::mat feature_means = arma::mean(*batch, 2);
-	arma::mat feature_variances = arma::sum(
-		(batch->each_slice() - feature_means).transform([] (double val) { return val*val; } ), 2) / batch->n_rows; 
-	
-	//denominator of normalization formula
-	feature_variances.transform([] (double val) { return sqrt(val + 0.0001); } );
-	//subtracting means for numerator
-	batch->each_slice() -= feature_means;
-	//normalized values
-	batch->each_slice() %= (1 / (feature_variances));
 }
 
 /*files assigned to thread are parsed and used to create matrix rows that are inserted into
