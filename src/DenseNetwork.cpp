@@ -41,15 +41,23 @@ void DenseNetwork::flatten_data(arma::cube * data)
     }
 }
 
-arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, const char *), void (*batch_norm)(arma::mat *))
+arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, const char *))
 {
     arma::mat results = this->data * weights1;
     activation_func(&results, "relu");
-    batch_norm(&results);
+    if(batch_norm1 == NULL)
+        batch_norm1 = new BatchNorm(&results);
+    else
+        batch_norm1->set_data(&results);
+    batch_norm1->normalize();
     
     results = results * weights2;
     activation_func(&results, "relu");
-    batch_norm(&results);
+    if(batch_norm2 == NULL)
+        batch_norm2 = new BatchNorm(&results);
+    else
+        batch_norm2->set_data(&results);
+    batch_norm2->normalize();
 
     results = results * weights3;
     activation_func(&results, "softmax");

@@ -287,7 +287,7 @@ arma::mat dense_layer(arma::cube * data)
 		dense_network = new DenseNetwork(data);
 	else
 		dense_network->set_data(data);
-	return dense_network->calculate_output(activation_function, batch_normalization_mat);
+	return dense_network->calculate_output(activation_function);
 	
 }
 
