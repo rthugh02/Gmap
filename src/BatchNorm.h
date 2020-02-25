@@ -1,5 +1,5 @@
-#ifndef BATCHNORM.H
-#define BATCHNORM.H
+#ifndef BATCHNORM_H
+#define BATCHNORM_H
 
 #include <armadillo>
 class BatchNorm
