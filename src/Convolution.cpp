@@ -102,6 +102,11 @@ void Convolution::maxpooling(int step)
 		data->slice(i) = temp[i];
 }
 
+void Convolution::set_data(arma::cube * data)
+{
+    this->data = data;
+}
+
 Convolution::~Convolution()
 {
 }

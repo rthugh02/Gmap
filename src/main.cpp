@@ -12,6 +12,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "InputBatch.h"
+#include "Convolution.h"
 #include "LSTMCell.h"
 #include "DenseNetwork.h"
 /*
@@ -32,16 +33,16 @@
 //*********FUNCTIONS***********//
 //*****************************//
 
-void convolution(arma::cube *, arma::mat *);
+void convolution(arma::cube *);
 void LSTM(arma::cube *, int);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
-void train(arma::mat *);
+void train();
 void back_propagation(double);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-double feed_forward(InputBatch *, arma::mat *);
+double feed_forward(InputBatch *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::cube *);
 
@@ -54,6 +55,7 @@ const int INPUT_BATCH_SIZE = 50;
 //Data dimensions
 const int DATA_ROWS = 128;
 const int DATA_ROW_LENGTH = 1294;
+//convolution layers settings
 const int KERNEL_WIDTH = 3;
 //Output Neurons, there are 8 genre classifications
 const int OUTPUT_COUNT = 8;
@@ -74,6 +76,10 @@ std::mutex finish_mutex;
 std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
+//Convolution Layers with maxpooling
+Convolution * convolution_layer1 = NULL;
+Convolution * convolution_layer2 = NULL;
+Convolution * convolution_layer3 = NULL;
 //LSTM_cells for each mel-spec row
 std::vector<LSTMCell> LSTM_cells;
 //Dense network layer
@@ -81,25 +87,12 @@ DenseNetwork * dense_network = NULL;
 
 int main() 
 {
-	//Random seed for initializing weights
 	std::random_device rd;
-	
-	//Uniform distribution of real numbers
-	std::normal_distribution<double> distr(0, 1);
-	
-	//mersenne twister engine for generating random values
-	std::mt19937 engine(rd());
-
-	//kernel weights for convolution layer
-	arma::mat * kernel = new arma::mat(DATA_ROWS, KERNEL_WIDTH);
-	engine.seed(rd());
-	kernel->imbue( [&]() {return distr(engine) * 2 / (DATA_ROWS); } );
-
 	//threads that will parse song_data directory and generate input data for NN
 	std::vector<std::thread> directory_threads;
 
 	//thread dedicated to feed-forward/back-propogation of NN
-	std::thread train_thread(train, kernel);
+	std::thread train_thread(train);
 	
 	//getting all file paths and randomly shuffling them
 	std::vector<std::string> all_files;
@@ -125,7 +118,7 @@ int main()
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
-void train(arma::mat * kernel)
+void train()
 {
 	//while there are directory threads still doing work
 	int batch_count = 0;
@@ -139,18 +132,18 @@ void train(arma::mat * kernel)
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		double loss = feed_forward(next, kernel);
+		double loss = feed_forward(next);
 		next->free();
 		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
 		back_propagation(loss);
 	}
 }
 
-double feed_forward(InputBatch * input, arma::mat * kernel)
+double feed_forward(InputBatch * input)
 {
 	//Process: convolution -> LSTM -> dense -> output
-	for(int i = 0; i < 3; i++)
-		convolution(input->data, kernel);
+		
+	convolution(input->data);
 	
 	LSTM(input->data, 27);
 	//input->data->slice(0).print("post LSTM:");
@@ -163,92 +156,31 @@ double feed_forward(InputBatch * input, arma::mat * kernel)
 	double loss = -arma::mean(
 		arma::sum(predictions, 1)
 	);
-
 	return loss;
 }
 
-void convolution(arma::cube * data, arma::mat * kernel)
+void convolution(arma::cube * data)
 {
-	// process: 1D convolution -> ReLu -> Batch normalization -> maxpooling
-	
-	//1D convolution and ReLu
-	for(arma::uword slice = 0; slice < data->n_slices; slice++)
-	{
-		arma::mat convoluted_vectors(data->n_rows, data->n_cols);
+	//convolution layer 1
+	if(convolution_layer1 == NULL)
+		convolution_layer1 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+	else
+		convolution_layer1->set_data(data);
+	convolution_layer1->convolve(2, activation_function);
 
-		//calculate convoluted vectors centered around each column of the matrix
-		for(arma::uword j = 0; j < data->n_cols; j++)
-		{
-			arma::mat sub_mat;
-			
-			//apply padding vectors on the left-most part of the X-axis
-			if(j < ((KERNEL_WIDTH - 1) / 2))
-			{
-				int padding, index = 0;
-				for(padding = j; padding < ((KERNEL_WIDTH - 1) / 2); padding++)
-					sub_mat.insert_cols(index++,arma::colvec(data->n_rows, arma::fill::zeros));
-				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
-					sub_mat.insert_cols(index++, data->slice(slice).col(remaining++));
-			}
-			//apply padding vectors to right-most part of the X-axis
-			else if(j >= data->n_cols - ((KERNEL_WIDTH - 1) / 2))
-			{
-				int index = 0;
-				for(arma::uword adding = (j - ((KERNEL_WIDTH - 1) / 2)); adding < data->n_cols; adding++)
-					sub_mat.insert_cols(index++, data->slice(slice).col(adding));
-				for(; index < KERNEL_WIDTH; index++)
-					sub_mat.insert_cols(index,arma::colvec(data->n_rows, arma::fill::zeros));
-			}
-			//no padding needed
-			else
-			{
-				sub_mat = data->slice(slice).cols(j - ((KERNEL_WIDTH - 1) / 2), j + ((KERNEL_WIDTH - 1) / 2) );
-			}
+	//convolution layer 2
+	if(convolution_layer2 == NULL)
+		convolution_layer2 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+	else
+		convolution_layer2->set_data(data);
+	convolution_layer2->convolve(2, activation_function);
 
-			convoluted_vectors.col(j) = arma::sum( (sub_mat % *(kernel)) , 1);
-		}
-		data->slice(slice) = convoluted_vectors;
-		activation_function(&data->slice(slice), "relu");
-	}
-	batch_normalization(data);
-	max_pooling(data, 2);
-}
-
-void max_pooling(arma::cube * data, int step)
-{
-	arma::mat temp[INPUT_BATCH_SIZE];
-
-	int new_column_size = 0;
-	//for each song in the batch
-	for(arma::uword slice = 0; slice < data->n_slices; slice++)
-	{
-		arma::mat pooled_song;
-		int index = 0;
-		//pooling based on step size for no overlap
-		for(arma::uword j = 0; j < data->n_cols; j+= step)
-		{
-			if(j + step > data->n_cols - 1)
-			{
-				pooled_song.insert_cols(index++ ,
-				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
-			}
-				
-			else
-			{
-				pooled_song.insert_cols(index++ ,
-				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
-			}					
-		}
-		//storing new column size and each pooled entry
-		new_column_size = pooled_song.n_cols;
-		temp[slice] = pooled_song;
-	}
-	//setting size of data post max-pooling
-	data->set_size(DATA_ROWS, new_column_size, INPUT_BATCH_SIZE);
-	
-	//re-assigning data with calculated max-pools
-	for(arma::uword i = 0; i < data->n_slices; i++)
-		data->slice(i) = temp[i];
+	//convolution layer 3
+	if(convolution_layer3 == NULL)
+		convolution_layer3 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+	else
+		convolution_layer3->set_data(data);
+	convolution_layer3->convolve(2, activation_function);
 }
 
 /*

@@ -18,6 +18,7 @@ public:
     Convolution(arma::cube * data, int data_rows, int kernel_width, int batch_size);
     ~Convolution();
 
+    void set_data(arma::cube *);
     void convolve(int, void (*)(arma::mat *, const char *));
 };
 
