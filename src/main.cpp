@@ -44,7 +44,6 @@ const char * output_to_genre(arma::rowvec);
 double feed_forward(InputBatch *, arma::mat *);
 void activation_function(arma::mat *, const char *);
 void batch_normalization(arma::cube *);
-void batch_normalization_mat(arma::mat *); 
 
 //*****************************//
 //*********CONSTANTS***********//
