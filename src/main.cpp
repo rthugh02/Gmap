@@ -23,7 +23,7 @@
 	TODO AND NOTES:
 
 	Layers/steps to build:
-	- add gamma and beta to batch normalization  (is this necessary?)
+	- add gamma and beta to batch normalization 
 	- Add bias to all needed layers
 
 */
