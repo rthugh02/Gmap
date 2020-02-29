@@ -26,8 +26,8 @@
 	TODO AND NOTES:
 
 	Layers/steps to build:
-	- add gamma and beta to batch normalization 
 	- Add bias to all needed layers
+	- Create back propagation step
 
 */
 
@@ -130,7 +130,7 @@ void train()
 	int batch_count = 0;
 	while(unfinished_threads > 0) 
 	{
-		//if queue is empty block this thread so as not to waste CPU time polling 
+		//if queue is empty block this thread to not waste CPU time polling 
 		std::unique_lock<std::mutex> lock(queue_mutex);
 		while (input_queue.empty())
 			cond.wait(lock);
@@ -143,6 +143,17 @@ void train()
 		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
 		back_propagation(loss);
 	}
+	while(!input_queue.empty())
+	{
+		InputBatch * next = input_queue.front();
+		input_queue.pop();
+
+		double loss = feed_forward(next);
+		next->free();
+		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		back_propagation(loss);
+	}
+	
 }
 
 double feed_forward(InputBatch * input)
