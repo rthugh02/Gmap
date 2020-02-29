@@ -16,6 +16,7 @@
 #include "LSTMCell.h"
 #include "DenseNetwork.h"
 #include "BatchNorm.h"
+#include "Song.h"
 /*
 	TROUBLESHOOTING:
 
@@ -72,10 +73,14 @@ int unfinished_threads = THREAD_COUNT;
 std::mutex queue_mutex;
 //mutex for thread safe decrementing of unfinished_threads
 std::mutex finish_mutex;
+//mutex for adding songs
+std::mutex song_mutex;
 //condition variable used by train thread to make the assigned thread block when queue is empty
 std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
+//all songs
+std::vector<Song> songs;
 //Convolution Layers with maxpooling
 Convolution * convolution_layer1 = NULL;
 Convolution * convolution_layer2 = NULL;
@@ -344,6 +349,10 @@ void convert_data(std::vector<std::string> files)
 			song_buffer.push_back(spectogram_data);
 			genre_buffer.push_back(genre_to_output(genre));
 			row_counter++;
+			
+			song_mutex.lock();
+			songs.emplace_back(spectogram_data, genre_to_output(genre));
+			song_mutex.unlock();
 		}
 		else
 			build_batch();	
