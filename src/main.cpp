@@ -40,11 +40,11 @@ void LSTM(arma::cube *, int);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
 void train();
-void back_propagation(double);
+void back_propagation(arma::mat);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
-double feed_forward(InputBatch *);
+arma::mat feed_forward(InputBatch *);
 void activation_function(arma::mat *, const char *);
 
 //*****************************//
@@ -138,42 +138,43 @@ void train()
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		double loss = feed_forward(next);
+		arma::mat predictions = feed_forward(next);
 		next->free();
-		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-		back_propagation(loss);
+		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		back_propagation(predictions);
 	}
 	while(!input_queue.empty())
 	{
 		InputBatch * next = input_queue.front();
 		input_queue.pop();
 
-		double loss = feed_forward(next);
+		arma::mat predictions = feed_forward(next);
 		next->free();
-		std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-		back_propagation(loss);
+		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		back_propagation(predictions);
 	}
 	
 }
 
-double feed_forward(InputBatch * input)
+arma::mat feed_forward(InputBatch * input)
 {
 	//Process: convolution -> LSTM -> dense -> output
 		
 	convolution(input->data);
 	
 	LSTM(input->data, 27);
-	//input->data->slice(0).print("post LSTM:");
-	arma::mat predictions = dense_layer(input->data);
+
+	return dense_layer(input->data);
 	
 	//calculating categorical cross entropy cost
+	/*
 	predictions.transform([&] (double val) { return log(val); });
 	predictions %= *(input->genres);
 
 	double loss = -arma::mean(
 		arma::sum(predictions, 1)
 	);
-	return loss;
+	*/
 }
 
 void convolution(arma::cube * data)
@@ -243,9 +244,21 @@ arma::mat dense_layer(arma::cube * data)
 	
 }
 
-void back_propagation(double loss)
+void back_propagation(arma::mat predictions)
 {
+	//backwards through dense_network
+
 	
+
+	//backwards through LSTM_batch_norm
+
+	//backwards through LSTM
+
+	//backwards through convolution layer 3
+
+	//backwards through convolution layer 2
+
+	//backwards through convolution layer 1
 }
 
 void activation_function(arma::mat * input, const char * function)
