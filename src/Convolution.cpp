@@ -57,11 +57,11 @@ void Convolution::convolve(int step, void (*activation_func)(arma::mat *, const 
 		data->slice(slice) = convoluted_vectors;
 		activation_func(&data->slice(slice), "relu");
 	}
-    if(batch_norm1 == NULL)
-        batch_norm1 = new BatchNorm(data);
+    if(batch_norm == NULL)
+        batch_norm = new BatchNorm(data);
     else
-        batch_norm1->set_data(data);
-    batch_norm1->normalize();
+        batch_norm->set_data(data);
+    batch_norm->normalize();
     maxpooling(step);
 }
 

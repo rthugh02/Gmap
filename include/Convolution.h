@@ -7,7 +7,7 @@ class Convolution
 {
 private:
     arma::mat kernel;
-    BatchNorm * batch_norm1 = NULL;
+    BatchNorm * batch_norm = NULL;
     arma::cube * data;
 
     unsigned int KERNEL_WIDTH;
