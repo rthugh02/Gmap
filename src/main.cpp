@@ -40,7 +40,7 @@ void LSTM(arma::cube *, int);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
 void train();
-void back_propagation(arma::mat);
+void back_propagation(arma::mat, arma::mat);
 void convert_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
@@ -139,9 +139,9 @@ void train()
 		input_queue.pop();
 
 		arma::mat predictions = feed_forward(next);
+		back_propagation(predictions, *(next->genres));
 		next->free();
 		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-		back_propagation(predictions);
 	}
 	while(!input_queue.empty())
 	{
@@ -149,9 +149,9 @@ void train()
 		input_queue.pop();
 
 		arma::mat predictions = feed_forward(next);
+		back_propagation(predictions, *(next->genres));
 		next->free();
 		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-		back_propagation(predictions);
 	}
 	
 }
@@ -244,11 +244,11 @@ arma::mat dense_layer(arma::cube * data)
 	
 }
 
-void back_propagation(arma::mat predictions)
+void back_propagation(arma::mat predictions, arma::mat correct_output)
 {
 	//backwards through dense_network
 
-	
+	dense_network->back_propagation(predictions, correct_output);
 
 	//backwards through LSTM_batch_norm
 

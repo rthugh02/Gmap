@@ -10,6 +10,9 @@ private:
     arma::mat weights2;
     arma::mat weights3;
 
+    arma::mat pre_softmax;
+    arma::mat batch_norm2_out;
+
     //batch normalization layers between the weights
     BatchNorm * batch_norm1 = NULL;
     BatchNorm * batch_norm2 = NULL;
@@ -18,12 +21,15 @@ private:
     arma::mat data;
 
     void flatten_data(arma::cube * data);
+    void update_weights_3(arma:: mat, arma::mat);
 public:
     DenseNetwork(arma::cube * data);
     ~DenseNetwork();
 
     arma::mat calculate_output(void (*activation_func)(arma::mat *, const char *));
     void set_data(arma::cube * data);
+
+    void back_propagation(arma::mat, arma::mat);
 };
 
 
