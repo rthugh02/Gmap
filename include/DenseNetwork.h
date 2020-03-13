@@ -22,6 +22,7 @@ private:
 
     void flatten_data(arma::cube * data);
     arma::mat update_weights_3(arma:: mat, arma::mat);
+    arma::mat update_weights_2(arma::mat);
 public:
     DenseNetwork(arma::cube * data);
     ~DenseNetwork();

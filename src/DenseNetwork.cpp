@@ -69,11 +69,13 @@ arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, co
 
 void DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_output)
 {
-    //update order: weights3 -> -> weights2 -> batch_norm2 ->  weights1 -> batch_norm1 
+    //update order: weights3 -> batch_norm2 -> weights2 -> batchnorm1 -> weights1 
 
     arma::mat delta_error_wr2_batchnorm2_out = update_weights_3(predictions, correct_output);
     
     arma::mat delta_error_wr2_batchnorm2_in =  batch_norm2->back_propagation(delta_error_wr2_batchnorm2_out);
+
+    arma::mat temp_name = update_weights_2(delta_error_wr2_batchnorm2_in);
 }
 
 arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correct_output)
@@ -115,6 +117,11 @@ arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correc
     weights3 -= (weights3_gradient * 0.1);
 
     return ret;
+}
+
+arma::mat DenseNetwork::update_weights_2(arma::mat delta)
+{
+    
 }
 
 DenseNetwork::~DenseNetwork()
