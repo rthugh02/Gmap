@@ -11,6 +11,8 @@ BatchNorm::BatchNorm(arma::mat * data)
 {
     this->isCube = false;
     this->mat_data = data;
+    this->feature_scales_mat = arma::rowvec(data->n_cols, arma::fill::ones);
+    this->feature_shifts_mat = arma::rowvec(data->n_cols, arma::fill::zeros);
 }
 
 void BatchNorm::set_data(arma::cube * data)
@@ -56,8 +58,9 @@ void BatchNorm::normalize()
 	    cube_data->each_slice() -= feature_means;
 	    //normalized values
 	    cube_data->each_slice() %= (1 / (feature_variances));
+        cube_data_copy = *(cube_data);
         //apply gamma and beta scale and shift
-        cube_data->transform([&] (double val) { return (val * this->scale) + this->shift; } );
+       // cube_data->transform([&] (double val) { return (val * this->scale) + this->shift; } );
     }
     else
     {
@@ -71,10 +74,18 @@ void BatchNorm::normalize()
 	    mat_data->each_row() -= feature_means;
 	    //normalized values
 	    mat_data->each_row() %= (1 / (feature_variances));
+        mat_data_copy = *(mat_data);
         //apply gamma and beta scale and shift
-        mat_data->transform([&] (double val) { return (val * this->scale) + this->shift; } );
+        mat_data->each_row() %= this->feature_scales_mat;
+        mat_data->each_row() += this->feature_shifts_mat;
     }
     
+}
+
+void BatchNorm::back_propagation(arma::mat delta)
+{
+    arma::rowvec shifts_delta = arma::rowvec(this->feature_shifts_mat.n_cols, arma::fill::zeros);
+        
 }
 
 BatchNorm::~BatchNorm()

@@ -250,6 +250,15 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 
 	dense_network->back_propagation(predictions, correct_output);
 
+	predictions.transform([&] (double val) { return log(val); });
+	predictions %= correct_output;
+
+	double loss = -arma::mean(
+		arma::sum(predictions, 1)
+	);
+
+	std::cout << "loss: " << loss << std::endl;
+
 	//backwards through LSTM_batch_norm
 
 	//backwards through LSTM
