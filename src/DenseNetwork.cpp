@@ -44,14 +44,17 @@ void DenseNetwork::flatten_data(arma::cube * data)
 arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, const char *))
 {
     arma::mat results = this->data * weights1;
+    pre_relu1 = results;
     activation_func(&results, "relu");
     if(batch_norm1 == NULL)
         batch_norm1 = new BatchNorm(&results);
     else
         batch_norm1->set_data(&results);
     batch_norm1->normalize();
+    batch_norm1_out = results;
     
     results = results * weights2;
+    pre_relu2 = results;
     activation_func(&results, "relu");
     if(batch_norm2 == NULL)
         batch_norm2 = new BatchNorm(&results);
@@ -97,14 +100,13 @@ arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correc
     copies_of_sums.each_col() = sum_of_ins;
 
     arma::mat delta_out_wr2_in = ((pre_softmax % (copies_of_sums - pre_softmax)) / (copies_of_sums % copies_of_sums));
-
     //change in input with respect to the weights, this is simply the input
     arma::mat delta_in_wr2_weights3 = batch_norm2_out;
     
     //applying chain rule and averaging results across the mini-batch to get gradient of weight3
     arma::mat temp_delta = delta_error_wr2_out % delta_out_wr2_in;
     
-    arma::cube delta_error_wr2_weights3 = arma::cube(32, 8, delta_in_wr2_weights3.n_rows);
+    arma::cube delta_error_wr2_weights3 = arma::cube(weights3.n_rows, weights3.n_cols, delta_in_wr2_weights3.n_rows);
 
     for(arma::uword i = 0; i < delta_error_wr2_weights3.n_slices; i++)
     {
@@ -119,9 +121,31 @@ arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correc
     return ret;
 }
 
-arma::mat DenseNetwork::update_weights_2(arma::mat delta)
+arma::mat DenseNetwork::update_weights_2(arma::mat delta_error_wr2_out)
 {
+    //derivative of ReLu
+    arma::mat delta_out_wr2_in = pre_relu2;
     
+    delta_out_wr2_in.transform([&] (double val) { return val > 0 ? 1 : 0; });
+    
+    arma::mat delta_in_wr2_weights2 = batch_norm1_out;
+    
+    arma::cube delta_error_wr2_weights2 = arma::cube(weights2.n_rows, weights2.n_cols, delta_in_wr2_weights2.n_rows);
+    arma::mat temp_delta = delta_error_wr2_out % delta_out_wr2_in; 
+
+    for(arma::uword i = 0; i < delta_error_wr2_weights2.n_slices; i++)
+    {
+        delta_error_wr2_weights2.slice(i) =  delta_in_wr2_weights2.row(i).t() * temp_delta.row(i);
+    }
+
+    std::cout << "post error to weights" << std::endl;
+    arma::mat ret = temp_delta * weights2.t();
+    arma::mat weights2_gradient = arma::mean(delta_error_wr2_weights2, 2);
+
+    weights2 -= (weights2_gradient * 0.1);
+
+    std::cout << "back propagated error: " << ret.n_rows << " X " << ret.n_cols << std::endl;
+    return ret;
 }
 
 DenseNetwork::~DenseNetwork()

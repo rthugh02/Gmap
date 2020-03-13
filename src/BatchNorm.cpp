@@ -99,7 +99,6 @@ arma::mat BatchNorm::back_propagation(arma::mat delta_error)
     feature_shifts_mat -= delta_beta;
     feature_scales_mat -= delta_gamma;
     
-    std::cout << "delta error wr2 in dims: " << delta_error_wr2_batchnorm_in.n_rows << " X " << delta_error_wr2_batchnorm_in.n_cols << std::endl;
     return delta_error_wr2_batchnorm_in;
 }
 

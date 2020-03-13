@@ -11,7 +11,10 @@ private:
     arma::mat weights3;
 
     arma::mat pre_softmax;
+    arma::mat pre_relu2;
+    arma::mat pre_relu1;
     arma::mat batch_norm2_out;
+    arma::mat batch_norm1_out;
 
     //batch normalization layers between the weights
     BatchNorm * batch_norm1 = NULL;
