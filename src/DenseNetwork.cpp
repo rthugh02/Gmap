@@ -72,8 +72,7 @@ void DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_out
     //update order: weights3 -> -> weights2 -> batch_norm2 ->  weights1 -> batch_norm1 
 
     arma::mat delta_totalerror_wr2_batchnorm2_out = update_weights_3(predictions, correct_output);
-    std::cout << "delta_totalerror_wr2_batchout: " << delta_totalerror_wr2_batchnorm2_out.n_rows << " X " << delta_totalerror_wr2_batchnorm2_out.n_cols << std::endl;
-
+    
     batch_norm2->back_propagation(delta_totalerror_wr2_batchnorm2_out);
 }
 

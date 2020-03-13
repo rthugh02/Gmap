@@ -8,10 +8,14 @@ private:
     //trainable gamma and beta values for shifting normalized data
     arma::rowvec feature_scales_mat;
     arma::rowvec feature_shifts_mat;
+
     arma::cube * cube_data;
     arma::cube cube_data_copy;
+
     arma::mat * mat_data;
     arma::mat mat_data_copy;
+
+    arma::rowvec feature_var_copy;
     bool isCube;
 
     
@@ -24,7 +28,7 @@ public:
     void set_data(arma::mat * data);
     void normalize();
 
-    void back_propagation(arma::mat);
+    arma::mat back_propagation(arma::mat);
 };
 
 #endif

@@ -75,6 +75,7 @@ void BatchNorm::normalize()
 	    //normalized values
 	    mat_data->each_row() %= (1 / (feature_variances));
         mat_data_copy = *(mat_data);
+        feature_var_copy = feature_variances;
         //apply gamma and beta scale and shift
         mat_data->each_row() %= this->feature_scales_mat;
         mat_data->each_row() += this->feature_shifts_mat;
@@ -82,10 +83,24 @@ void BatchNorm::normalize()
     
 }
 
-void BatchNorm::back_propagation(arma::mat delta)
+arma::mat BatchNorm::back_propagation(arma::mat delta_error)
 {
-    arma::rowvec shifts_delta = arma::rowvec(this->feature_shifts_mat.n_cols, arma::fill::zeros);
-        
+    //https://chrisyeh96.github.io/2017/08/28/deriving-batchnorm-backprop.html
+
+    arma::rowvec delta_beta = arma::sum(delta_error, 0);
+    arma::rowvec delta_gamma = arma::sum(delta_error % mat_data_copy, 0);
+
+    int batch_size = delta_error.n_rows;
+    arma:: mat delta_error_wr2_batchnorm_in = 
+    ((batch_size * delta_error) - (arma::colvec(batch_size, arma::fill::ones) * delta_beta) - (mat_data_copy.each_row() % delta_gamma ));
+    delta_error_wr2_batchnorm_in.each_row() %= ((double)(1/batch_size) * feature_scales_mat % (1 / feature_var_copy));
+    
+
+    feature_shifts_mat -= delta_beta;
+    feature_scales_mat -= delta_gamma;
+    
+    std::cout << "delta error wr2 in dims: " << delta_error_wr2_batchnorm_in.n_rows << " X " << delta_error_wr2_batchnorm_in.n_cols << std::endl;
+    return delta_error_wr2_batchnorm_in;
 }
 
 BatchNorm::~BatchNorm()
