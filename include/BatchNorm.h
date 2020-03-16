@@ -18,7 +18,8 @@ private:
     arma::mat * mat_data;
     arma::mat mat_data_copy;
 
-    arma::rowvec feature_var_copy;
+    arma::rowvec feature_var_copy_mat;
+    arma::mat feature_var_copy_cube;
     bool isCube;
 
     

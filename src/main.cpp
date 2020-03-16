@@ -252,6 +252,8 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 
 	//backwards through LSTM_batch_norm
 
+	arma::cube delta_error_wr2_lstm_BN_in = LSTM_batch_norm->back_propagation(delta_error_wr2_lstm_BN_out);
+
 	//backwards through LSTM
 
 	//backwards through convolution layer 3

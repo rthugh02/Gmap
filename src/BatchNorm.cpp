@@ -61,6 +61,7 @@ void BatchNorm::normalize()
 	    //normalized values
 	    cube_data->each_slice() %= (1 / (feature_variances));
         cube_data_copy = *(cube_data);
+        feature_var_copy_cube = feature_variances;
         //apply gamma and beta scale and shift
        cube_data->each_slice() %= this->feature_scales_cube;
        cube_data->each_slice() += this->feature_shifts_cube;
@@ -78,7 +79,7 @@ void BatchNorm::normalize()
 	    //normalized values
 	    mat_data->each_row() %= (1 / (feature_variances));
         mat_data_copy = *(mat_data);
-        feature_var_copy = feature_variances;
+        feature_var_copy_mat = feature_variances;
         //apply gamma and beta scale and shift
         mat_data->each_row() %= this->feature_scales_mat;
         mat_data->each_row() += this->feature_shifts_mat;
@@ -96,7 +97,7 @@ arma::mat BatchNorm::back_propagation(arma::mat delta_error)
     int batch_size = delta_error.n_rows;
     arma:: mat delta_error_wr2_batchnorm_in = 
     ((batch_size * delta_error) - (arma::colvec(batch_size, arma::fill::ones) * delta_beta) - (mat_data_copy.each_row() % delta_gamma ));
-    delta_error_wr2_batchnorm_in.each_row() %= ((double)(1/batch_size) * feature_scales_mat % (1 / feature_var_copy));
+    delta_error_wr2_batchnorm_in.each_row() %= ((double)(1/batch_size) * feature_scales_mat % (1 / feature_var_copy_mat));
     
 
     feature_shifts_mat -= delta_beta;
@@ -107,7 +108,18 @@ arma::mat BatchNorm::back_propagation(arma::mat delta_error)
 
 arma::cube BatchNorm::back_propagation(arma::cube delta_error)
 {
-    
+    arma::mat delta_beta = arma::sum(delta_error, 2);
+    arma::mat delta_gamma = arma::sum(delta_error % cube_data_copy, 2);
+
+    int batch_size = delta_error.n_slices;
+    arma::cube delta_error_wr2_batchnorm_in =
+    (delta_error *= batch_size).each_slice() - (delta_beta) - (cube_data_copy.each_slice() % delta_gamma);
+    delta_error_wr2_batchnorm_in.each_slice() %= ((double)(1/batch_size) * feature_scales_cube % (1 / feature_var_copy_cube));
+
+    feature_shifts_cube -= delta_beta;
+    feature_scales_cube -= delta_gamma;
+
+    return delta_error_wr2_batchnorm_in;
 }
 
 BatchNorm::~BatchNorm()
