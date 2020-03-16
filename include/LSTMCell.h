@@ -29,6 +29,8 @@ class LSTMCell
 
         void set_data(arma::mat row_slice);
         arma::mat calculate_output(void (*)(arma::mat *, const char *));
+
+        arma::mat back_propagation(arma::mat);
 };
 
 #endif

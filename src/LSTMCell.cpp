@@ -84,6 +84,11 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
     return out;
 }
 
+arma::mat LSTMCell::back_propagation(arma::mat delta_error)
+{
+    
+}
+
 LSTMCell::~LSTMCell()
 {
 

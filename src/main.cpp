@@ -36,7 +36,7 @@
 //*****************************//
 
 void convolution(arma::cube *);
-void LSTM(arma::cube *, int);
+void LSTM(arma::cube *);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
 void train();
@@ -62,6 +62,8 @@ const int KERNEL_WIDTH = 3;
 const int OUTPUT_COUNT = 8;
 //number of threads to use for parsing files
 const int THREAD_COUNT = 11;
+
+const int LSTM_TIMESTEP = 27;
 
 //*******************************//
 //*********SHARED VARS***********//
@@ -162,7 +164,7 @@ arma::mat feed_forward(InputBatch * input)
 		
 	convolution(input->data);
 	
-	LSTM(input->data, 27);
+	LSTM(input->data);
 
 	return dense_layer(input->data);
 	
@@ -209,16 +211,16 @@ an LSTM layer accepts all the inputs from the layer leading into it
 View the graph in this link for conceptual view: https://www.quora.com/In-LSTM-how-do-you-figure-out-what-size-the-weights-are-supposed-to-be
 
 */
-void LSTM(arma::cube * data, int timesteps)
+void LSTM(arma::cube * data)
 {
 	arma::mat temp[DATA_ROWS];
-	int split_column_width = data->n_cols / timesteps;
+	int split_column_width = data->n_cols / LSTM_TIMESTEP;
 	for(int i = 0; i < DATA_ROWS; i++)
 	{
 		arma::mat row_slice = data->tube(i, 0, i, data->n_cols - 1);
 		arma::inplace_trans(row_slice);
 		if(LSTM_cells.size() < DATA_ROWS)
-			LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, timesteps);
+			LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, LSTM_TIMESTEP);
 		else
 			LSTM_cells[i].set_data(row_slice);
 		temp[i] = LSTM_cells[i].calculate_output(activation_function);
@@ -255,6 +257,13 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	arma::cube delta_error_wr2_lstm_BN_in = LSTM_batch_norm->back_propagation(delta_error_wr2_lstm_BN_out);
 
 	//backwards through LSTM
+
+	for(int i = 0; i < DATA_ROWS; i++)
+	{
+		arma::mat delta_error_row_slice = delta_error_wr2_lstm_BN_in.tube(i, 0, i, delta_error_wr2_lstm_BN_in.n_cols - 1);
+		arma::inplace_trans(delta_error_row_slice);
+		LSTM_cells[i].back_propagation(delta_error_row_slice);
+	}
 
 	//backwards through convolution layer 3
 
