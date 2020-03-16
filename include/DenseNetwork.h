@@ -23,6 +23,9 @@ private:
     //batch data
     arma::mat data;
 
+    arma::uword data_cols;
+    arma::uword data_rows;
+
     void flatten_data(arma::cube * data);
     arma::mat update_weights_3(arma:: mat, arma::mat);
     arma::mat update_weights_2(arma::mat);
@@ -34,7 +37,7 @@ public:
     arma::mat calculate_output(void (*activation_func)(arma::mat *, const char *));
     void set_data(arma::cube * data);
 
-    void back_propagation(arma::mat, arma::mat);
+    arma::cube back_propagation(arma::mat, arma::mat);
 };
 
 

@@ -248,16 +248,7 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 {
 	//backwards through dense_network
 
-	dense_network->back_propagation(predictions, correct_output);
-
-	predictions.transform([&] (double val) { return log(val); });
-	predictions %= correct_output;
-
-	double loss = -arma::mean(
-		arma::sum(predictions, 1)
-	);
-
-	std::cout << "loss: " << loss << std::endl;
+	arma::cube delta_error_wr2_lstm_BN_out = dense_network->back_propagation(predictions, correct_output);
 
 	//backwards through LSTM_batch_norm
 
@@ -268,6 +259,15 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	//backwards through convolution layer 2
 
 	//backwards through convolution layer 1
+
+	predictions.transform([&] (double val) { return log(val); });
+	predictions %= correct_output;
+
+	double loss = -arma::mean(
+		arma::sum(predictions, 1)
+	);
+
+	std::cout << "loss: " << loss << std::endl;
 }
 
 void activation_function(arma::mat * input, const char * function)

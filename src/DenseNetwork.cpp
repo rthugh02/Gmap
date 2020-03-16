@@ -34,6 +34,8 @@ void DenseNetwork::set_data(arma::cube * data)
 void DenseNetwork::flatten_data(arma::cube * data)
 {
     //vectorizing slices and combining 
+    this->data_cols = data->n_cols;
+    this->data_rows = data->n_rows;
     this->data = arma::mat(data->n_slices, data->n_cols * data->n_rows);
     for(arma::uword i = 0; i < data->n_slices; i++)
     {
@@ -70,7 +72,7 @@ arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, co
     return results;
 }
 
-void DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_output)
+arma::cube DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_output)
 {
     //update order: weights3 -> batch_norm2 -> weights2 -> batchnorm1 -> weights1 
 
@@ -83,6 +85,20 @@ void DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_out
     arma::mat delta_error_wr2_batchnorm1_in = batch_norm1->back_propagation(delta_error_wr2_batchnorm1_out);
 
     arma::mat delta_error_wr2_dense_net_input = update_weights_1(delta_error_wr2_batchnorm1_in);   
+
+    //reassembling delta error back into cube since input was flattened
+    arma::cube ret = arma::cube(this->data_rows, this->data_cols, delta_error_wr2_dense_net_input.n_rows);
+	for(arma::uword i = 0; i < delta_error_wr2_dense_net_input.n_rows; i++)
+	{
+		arma::mat reassembled_slice = arma::mat(ret.n_rows, ret.n_cols);
+		for(arma::uword j = 0; j < ret.n_cols -1; j++)
+		{
+			reassembled_slice.row(j) = delta_error_wr2_dense_net_input.submat(i, j*ret.n_cols, i, j*ret.n_cols + ret.n_cols - 1);
+		}
+		ret.slice(i) = reassembled_slice;
+	}
+
+    return ret;
 }
 
 arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correct_output)
@@ -121,7 +137,7 @@ arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correc
     arma::mat weights3_gradient = arma::mean(delta_error_wr2_weights3, 2);
 
     weights3 -= (weights3_gradient * 0.1);
-
+    
     return ret;
 }
 
@@ -146,7 +162,7 @@ arma::mat DenseNetwork::update_weights_2(arma::mat delta_error_wr2_out)
     arma::mat weights2_gradient = arma::mean(delta_error_wr2_weights2, 2);
 
     weights2 -= (weights2_gradient * 0.1);
-
+   
     return ret;
 }
 
