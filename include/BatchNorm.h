@@ -9,6 +9,9 @@ private:
     arma::rowvec feature_scales_mat;
     arma::rowvec feature_shifts_mat;
 
+    arma::mat feature_scales_cube;
+    arma::mat feature_shifts_cube;
+
     arma::cube * cube_data;
     arma::cube cube_data_copy;
 

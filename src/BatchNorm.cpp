@@ -5,6 +5,8 @@ BatchNorm::BatchNorm(arma::cube * data)
 {
     this->isCube = true;
     this->cube_data = data;
+    this->feature_scales_cube = arma::mat(data->n_rows, data->n_cols, arma::fill::ones);
+    this->feature_shifts_cube = arma::mat(data->n_rows, data->n_cols, arma::fill::zeros);
 }
 
 BatchNorm::BatchNorm(arma::mat * data)
@@ -60,7 +62,8 @@ void BatchNorm::normalize()
 	    cube_data->each_slice() %= (1 / (feature_variances));
         cube_data_copy = *(cube_data);
         //apply gamma and beta scale and shift
-       // cube_data->transform([&] (double val) { return (val * this->scale) + this->shift; } );
+       cube_data->each_slice() %= this->feature_scales_cube;
+       cube_data->each_slice() += this->feature_shifts_cube;
     }
     else
     {
