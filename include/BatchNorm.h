@@ -32,6 +32,7 @@ public:
     void normalize();
 
     arma::mat back_propagation(arma::mat);
+    arma::cube back_propagation(arma::cube);
 };
 
 #endif

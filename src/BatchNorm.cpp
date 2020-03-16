@@ -105,6 +105,11 @@ arma::mat BatchNorm::back_propagation(arma::mat delta_error)
     return delta_error_wr2_batchnorm_in;
 }
 
+arma::cube BatchNorm::back_propagation(arma::cube delta_error)
+{
+    
+}
+
 BatchNorm::~BatchNorm()
 {
 }
