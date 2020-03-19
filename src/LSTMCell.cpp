@@ -106,14 +106,17 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
 {
     //https://medium.com/@aidangomez/let-s-do-this-f9b699de31d9
 
+
+
     arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
     arma::mat delta_next_out = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_state_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat forget_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_t = delta_error;
+
     for(int i = hidden_units - 1; i >= 0; i--)
     {
-        arma::mat delta_out_t = delta_t + delta_next_out;
+        arma::mat delta_out_t = delta_t;
         arma::mat cell_state_copy = cell_states[i];
         activation_func(&cell_states[i], "tanh2");
         arma::mat delta_state_t = delta_out_t % outs[i] % (1 - cell_states[i]) + (delta_state_next % forget_next);
@@ -126,14 +129,14 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
         activation_func(&cell_state_copy, "tanh");
         arma::mat delta_output_t = delta_out_t % cell_state_copy % outputs[i] % (1 - outputs[i]);
 
-        delta_state_next = delta_state_t;
-        forget_next = forgets[i];
         
         arma::mat delta_x_t = (delta_cell_temp_t * datac_weights.t()) + (delta_input_t * datai_weights.t()) + (delta_forget_t * dataf_weights.t()) + (delta_output_t * datao_weights.t());
-        std::cout << "delta x at t dims: " << delta_x_t.n_rows << " X " << delta_x_t.n_cols << std::endl;
+        delta_t = (delta_cell_temp_t * prevc_weights.t()) + (delta_input_t * previ_weights.t()) + (delta_forget_t * prevf_weights.t()) + (delta_output_t * prevo_weights.t());
 
+        delta_state_next = delta_state_t;
+        forget_next = forgets[i];
 
-        //delta_error_wr2_cell_in.submat(0, )
+       // delta_error_wr2_cell_in.submat(0, )
     }
     return delta_error_wr2_cell_in;
 }
