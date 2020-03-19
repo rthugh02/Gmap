@@ -113,7 +113,7 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
     arma::mat delta_state_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat forget_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_t = delta_error;
-
+    int count = 0;
     for(int i = hidden_units - 1; i >= 0; i--)
     {
         arma::mat delta_out_t = delta_t;
@@ -136,7 +136,8 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
         delta_state_next = delta_state_t;
         forget_next = forgets[i];
 
-       // delta_error_wr2_cell_in.submat(0, )
+        int start_col = (features * hidden_units - features) - (features * count);
+        delta_error_wr2_cell_in.submat(0, start_col, batch_size-1, start_col + features-1) = delta_x_t;
     }
     return delta_error_wr2_cell_in;
 }
