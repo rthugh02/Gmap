@@ -291,6 +291,8 @@ void activation_function(arma::mat * input, const char * function)
 		input->transform([] (double val) { return (1 / (1 + exp(-val))); } );
 	else if(strcmp("tanh", function) == 0)
 		input->transform([] (double val) { return (exp(val) - exp(-val)) / (exp(val) + exp(-val)) ; } );
+	else if(strcmp("tanh2", function) == 0)
+		input->transform([] (double val) { double temp = (exp(val) - exp(-val)) / (exp(val) + exp(-val)) ; return temp * temp; } );
 	else if(strcmp("softmax", function) == 0)
 	{
 

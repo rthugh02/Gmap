@@ -62,6 +62,7 @@ void LSTMCell::split_row_slice(arma::mat row_slice)
     for(arma::uword i = 0; i < row_slice.n_cols; i+=features)
     {
         auto temp = row_slice.submat(0, i, batch_size - 1, i + features - 1);
+        //std::cout << "x sub t dims: " << temp.n_rows << " X " << temp.n_cols << std::endl;
         sub_mats.emplace_back(temp);
     }
 }
@@ -103,13 +104,36 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
 
 arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_func)(arma::mat *, const char *))
 {
+    //https://medium.com/@aidangomez/let-s-do-this-f9b699de31d9
+
     arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
     arma::mat delta_next_out = arma::zeros<arma::mat>(batch_size, hidden_units);
+    arma::mat delta_state_next = arma::zeros<arma::mat>(batch_size, hidden_units);
+    arma::mat forget_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_t = delta_error;
-    for(int i = hidden_units - 1; i > 0; i--)
+    for(int i = hidden_units - 1; i >= 0; i--)
     {
         arma::mat delta_out_t = delta_t + delta_next_out;
+        arma::mat cell_state_copy = cell_states[i];
+        activation_func(&cell_states[i], "tanh2");
+        arma::mat delta_state_t = delta_out_t % outs[i] % (1 - cell_states[i]) + (delta_state_next % forget_next);
 
+        arma::mat delta_cell_temp_t = delta_state_t % inputs[i] % (1 - (cell_temps[i] % cell_temps[i]));
+        arma::mat delta_input_t = delta_state_t % delta_cell_temp_t % inputs[i] % (1 - inputs[i]);
+        arma::mat delta_forget_t = delta_state_t % (i == 0 ? arma::zeros<arma::mat>(batch_size, hidden_units) : cell_states[i])
+        % forgets[i] % (1 - forgets[i]);
+
+        activation_func(&cell_state_copy, "tanh");
+        arma::mat delta_output_t = delta_out_t % cell_state_copy % outputs[i] % (1 - outputs[i]);
+
+        delta_state_next = delta_state_t;
+        forget_next = forgets[i];
+        
+        arma::mat delta_x_t = (delta_cell_temp_t * datac_weights.t()) + (delta_input_t * datai_weights.t()) + (delta_forget_t * dataf_weights.t()) + (delta_output_t * datao_weights.t());
+        std::cout << "delta x at t dims: " << delta_x_t.n_rows << " X " << delta_x_t.n_cols << std::endl;
+
+
+        //delta_error_wr2_cell_in.submat(0, )
     }
     return delta_error_wr2_cell_in;
 }
