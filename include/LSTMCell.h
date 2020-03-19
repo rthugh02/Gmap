@@ -16,6 +16,8 @@ class LSTMCell
     arma::mat datac_weights;
     arma::mat prevc_weights;
 
+    std::vector<arma::mat> outs = std::vector<arma::mat>();
+
     //input data for the cell
     std::vector<arma::mat> sub_mats;
     int hidden_units;

@@ -43,6 +43,7 @@ LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int features, int hidden
 void LSTMCell::set_data(arma::mat row_slice)
 {
     sub_mats.clear();
+    outs.clear();
     split_row_slice(row_slice);
 }
 
@@ -78,7 +79,8 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
         arma::mat cell_state_tanh = cell_state;
         activation_func(&cell_state_tanh, "tanh");
 
-        out = (output_gate % cell_state_tanh); 
+        out = (output_gate % cell_state_tanh);
+        outs.push_back(out); 
     }
 
     return out;
