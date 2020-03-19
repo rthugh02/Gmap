@@ -98,7 +98,6 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
         out = (output_gate % cell_state_tanh);
         outs.push_back(out); 
     }
-
     return out;
 }
 
@@ -117,6 +116,10 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
     arma::mat prevo_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
     arma::mat prevc_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
     
+    arma::mat deltaf_gate_next = arma::mat(batch_size, hidden_units, arma::fill::zeros);
+    arma::mat deltai_gate_next = arma::mat(batch_size, hidden_units, arma::fill::zeros);
+    arma::mat deltao_gate_next = arma::mat(batch_size, hidden_units, arma::fill::zeros);
+    arma::mat deltac_gate_next = arma::mat(batch_size, hidden_units, arma::fill::zeros);
 
     arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
     arma::mat delta_state_next = arma::zeros<arma::mat>(batch_size, hidden_units);
@@ -158,8 +161,24 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
         datao_gradient += sub_mats[i].t() * delta_output_t;
         datac_gradient += sub_mats[i].t() * delta_cell_temp_t;
 
+        prevf_gradient += outs[i].t() * deltaf_gate_next;
+        previ_gradient += outs[i].t() * deltai_gate_next;
+        prevo_gradient += outs[i].t() * deltao_gate_next;
+        prevc_gradient += outs[i].t() * deltac_gate_next;
 
+        deltaf_gate_next = delta_forget_t;
+        deltai_gate_next = delta_input_t;
+        deltao_gate_next = delta_output_t;
+        deltac_gate_next = delta_cell_temp_t;
     }
+
+
+
+
+
+
+
+
     return delta_error_wr2_cell_in;
 }
 
