@@ -16,6 +16,9 @@ class LSTMCell
     arma::mat datac_weights;
     arma::mat prevc_weights;
 
+    std::vector<arma::mat> forgets = std::vector<arma::mat>();
+    std::vector<arma::mat> inputs = std::vector<arma::mat>();
+    std::vector<arma::mat> outputs = std::vector<arma::mat>();
     std::vector<arma::mat> outs = std::vector<arma::mat>();
 
     //input data for the cell
@@ -25,6 +28,7 @@ class LSTMCell
     int features;
 
     void split_row_slice(arma::mat row_slice);
+    void clear_gates();
     public:
         LSTMCell(arma::mat row_slice, int batch_size, int cols, int hidden_units);
         ~LSTMCell();
@@ -32,7 +36,7 @@ class LSTMCell
         void set_data(arma::mat row_slice);
         arma::mat calculate_output(void (*)(arma::mat *, const char *));
 
-        arma::mat back_propagation(arma::mat);
+        arma::mat back_propagation(arma::mat, void (*)(arma::mat *, const char *));
 };
 
 #endif

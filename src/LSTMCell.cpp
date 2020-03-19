@@ -42,9 +42,17 @@ LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int features, int hidden
 
 void LSTMCell::set_data(arma::mat row_slice)
 {
-    sub_mats.clear();
-    outs.clear();
+    clear_gates();
     split_row_slice(row_slice);
+}
+
+void LSTMCell::clear_gates()
+{
+    sub_mats.clear();
+    forgets.clear();
+    inputs.clear();
+    outputs.clear();
+    outs.clear();
 }
 
 void LSTMCell::split_row_slice(arma::mat row_slice)
@@ -64,12 +72,15 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
     {
         arma::mat forget_gate = (sub_mats[i] * dataf_weights) + (out * prevf_weights);
         activation_func(&forget_gate, "sigmoid");
+        forgets.push_back(forget_gate);
 
         arma::mat input_gate = (sub_mats[i] * datai_weights) + (out * previ_weights);
         activation_func(&input_gate, "sigmoid");
+        inputs.push_back(input_gate);
 
         arma::mat output_gate = (sub_mats[i] * datao_weights) + (out * prevo_weights);
         activation_func(&output_gate, "sigmoid");
+        outputs.push_back(output_gate);
 
         arma::mat cell_temp = (sub_mats[i] * datac_weights) + (out * prevc_weights);
         activation_func(&cell_temp, "tanh");
@@ -86,9 +97,14 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
     return out;
 }
 
-arma::mat LSTMCell::back_propagation(arma::mat delta_error)
+arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_func)(arma::mat *, const char *))
 {
-    
+    arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
+    for(int i = hidden_units - 1; i > 0; i--)
+    {
+
+    }
+    return delta_error_wr2_cell_in;
 }
 
 LSTMCell::~LSTMCell()
