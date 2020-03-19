@@ -20,6 +20,7 @@ private:
     BatchNorm * batch_norm1 = NULL;
     BatchNorm * batch_norm2 = NULL;
     
+    const double LEARNING_RATE = 0.001;
     //batch data
     arma::mat data;
 

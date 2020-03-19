@@ -245,7 +245,7 @@ arma::mat dense_layer(arma::cube * data)
 	return dense_network->calculate_output(activation_function);
 	
 }
-
+int loss_count = 0;
 void back_propagation(arma::mat predictions, arma::mat correct_output)
 {
 	//backwards through dense_network
@@ -270,7 +270,8 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	//backwards through convolution layer 2
 
 	//backwards through convolution layer 1
-
+	//predictions.row(0).print("prediction: ");
+	//correct_output.row(0).print("label: ");
 	predictions.transform([&] (double val) { return log(val); });
 	predictions %= correct_output;
 
@@ -278,7 +279,7 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		arma::sum(predictions, 1)
 	);
 
-	std::cout << "loss: " << loss << std::endl;
+	std::cout << ++loss_count <<" loss: " << loss << std::endl;
 }
 
 void activation_function(arma::mat * input, const char * function)
@@ -396,9 +397,9 @@ void convert_data(std::vector<std::string> files)
 			genre_buffer.push_back(genre_to_output(genre));
 			row_counter++;
 			
-			song_mutex.lock();
-			songs.emplace_back(spectogram_data, genre_to_output(genre));
-			song_mutex.unlock();
+			//song_mutex.lock();
+			//songs.emplace_back(spectogram_data, genre_to_output(genre));
+			//song_mutex.unlock();
 		}
 		else
 			build_batch();	

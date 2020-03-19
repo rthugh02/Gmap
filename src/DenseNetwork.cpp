@@ -47,7 +47,7 @@ arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, co
 {
     arma::mat results = this->data * weights1;
     pre_relu1 = results;
-    activation_func(&results, "relu");
+    activation_func(&results, "leakyrelu");
     if(batch_norm1 == NULL)
         batch_norm1 = new BatchNorm(&results);
     else
@@ -57,7 +57,7 @@ arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, co
     
     results = results * weights2;
     pre_relu2 = results;
-    activation_func(&results, "relu");
+    activation_func(&results, "leakyrelu");
     if(batch_norm2 == NULL)
         batch_norm2 = new BatchNorm(&results);
     else
@@ -146,7 +146,7 @@ arma::mat DenseNetwork::update_weights_2(arma::mat delta_error_wr2_out)
     //derivative of ReLu
     arma::mat delta_out_wr2_in = pre_relu2;
     
-    delta_out_wr2_in.transform([&] (double val) { return val > 0 ? 1 : 0; });
+    delta_out_wr2_in.transform([&] (double val) { return val > 0 ? 1 : 0.01; });
     
     arma::mat delta_in_wr2_weights2 = batch_norm1_out;
     
@@ -171,7 +171,7 @@ arma::mat DenseNetwork::update_weights_1(arma::mat delta_error_wr2_out)
     //derivative of ReLu
     arma::mat delta_out_wr2_in = pre_relu1;
     
-    delta_out_wr2_in.transform([&] (double val) { return val > 0 ? 1 : 0; });
+    delta_out_wr2_in.transform([&] (double val) { return val > 0 ? 1 : 0.01; });
     
     arma::mat delta_in_wr2_weights1 = this->data;
     

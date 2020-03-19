@@ -22,7 +22,7 @@ private:
     arma::mat feature_var_copy_cube;
     bool isCube;
 
-    
+    double LEARNING_RATE = 0.001;
 public:
     BatchNorm(arma::cube * data);
     BatchNorm(arma::mat * data);
