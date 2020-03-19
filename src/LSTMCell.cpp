@@ -106,16 +106,27 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
 {
     //https://medium.com/@aidangomez/let-s-do-this-f9b699de31d9
 
+    //running sum of gradients through time
+    arma::mat dataf_gradient = arma::mat(features, hidden_units, arma::fill::zeros);
+    arma::mat datai_gradient = arma::mat(features, hidden_units, arma::fill::zeros);
+    arma::mat datao_gradient = arma::mat(features, hidden_units, arma::fill::zeros);
+    arma::mat datac_gradient = arma::mat(features, hidden_units, arma::fill::zeros);
 
+    arma::mat prevf_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
+    arma::mat previ_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
+    arma::mat prevo_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
+    arma::mat prevc_gradient = arma::mat(hidden_units, hidden_units, arma::fill::zeros);
+    
 
     arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
-    arma::mat delta_next_out = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_state_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat forget_next = arma::zeros<arma::mat>(batch_size, hidden_units);
     arma::mat delta_t = delta_error;
     int count = 0;
     for(int i = hidden_units - 1; i >= 0; i--)
     {
+        //calculating deltas of each gate
+
         arma::mat delta_out_t = delta_t;
         arma::mat cell_state_copy = cell_states[i];
         activation_func(&cell_states[i], "tanh2");
@@ -129,15 +140,25 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
         activation_func(&cell_state_copy, "tanh");
         arma::mat delta_output_t = delta_out_t % cell_state_copy % outputs[i] % (1 - outputs[i]);
 
-        
+        //derivative of error with respect to input x at time t
+
         arma::mat delta_x_t = (delta_cell_temp_t * datac_weights.t()) + (delta_input_t * datai_weights.t()) + (delta_forget_t * dataf_weights.t()) + (delta_output_t * datao_weights.t());
         delta_t = (delta_cell_temp_t * prevc_weights.t()) + (delta_input_t * previ_weights.t()) + (delta_forget_t * prevf_weights.t()) + (delta_output_t * prevo_weights.t());
 
         delta_state_next = delta_state_t;
         forget_next = forgets[i];
 
+        //transferring input x at time t to total delta matrix
         int start_col = (features * hidden_units - features) - (features * count);
         delta_error_wr2_cell_in.submat(0, start_col, batch_size-1, start_col + features-1) = delta_x_t;
+
+        //summing gradients
+        dataf_gradient += sub_mats[i].t() * delta_forget_t;
+        datai_gradient += sub_mats[i].t() * delta_input_t;
+        datao_gradient += sub_mats[i].t() * delta_output_t;
+        datac_gradient += sub_mats[i].t() * delta_cell_temp_t;
+
+
     }
     return delta_error_wr2_cell_in;
 }
