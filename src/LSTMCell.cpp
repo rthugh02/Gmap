@@ -52,6 +52,8 @@ void LSTMCell::clear_gates()
     forgets.clear();
     inputs.clear();
     outputs.clear();
+    cell_temps.clear();
+    cell_states.clear();
     outs.clear();
 }
 
@@ -84,9 +86,11 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
 
         arma::mat cell_temp = (sub_mats[i] * datac_weights) + (out * prevc_weights);
         activation_func(&cell_temp, "tanh");
+        cell_temps.push_back(cell_temp);
 
         cell_state = (forget_gate % cell_state) + (input_gate % cell_temp);
-        
+        cell_states.push_back(cell_state);
+
         arma::mat cell_state_tanh = cell_state;
         activation_func(&cell_state_tanh, "tanh");
 
@@ -100,8 +104,11 @@ arma::mat LSTMCell::calculate_output(void (*activation_func)(arma::mat *, const 
 arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_func)(arma::mat *, const char *))
 {
     arma::mat delta_error_wr2_cell_in = arma::mat(batch_size, features*hidden_units);
+    arma::mat delta_next_out = arma::zeros<arma::mat>(batch_size, hidden_units);
+    arma::mat delta_t = delta_error;
     for(int i = hidden_units - 1; i > 0; i--)
     {
+        arma::mat delta_out_t = delta_t + delta_next_out;
 
     }
     return delta_error_wr2_cell_in;

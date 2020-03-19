@@ -262,7 +262,6 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	{
 		arma::mat delta_error_row_slice = delta_error_wr2_lstm_BN_in.tube(i, 0, i, delta_error_wr2_lstm_BN_in.n_cols - 1);
 		arma::inplace_trans(delta_error_row_slice);
-		std::cout << "delta error lstm row slice out dims: " << delta_error_row_slice.n_rows << " X " << delta_error_row_slice.n_cols << std::endl;
 		LSTM_cells[i].back_propagation(delta_error_row_slice, activation_function);
 	}
 

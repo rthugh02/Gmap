@@ -19,6 +19,8 @@ class LSTMCell
     std::vector<arma::mat> forgets = std::vector<arma::mat>();
     std::vector<arma::mat> inputs = std::vector<arma::mat>();
     std::vector<arma::mat> outputs = std::vector<arma::mat>();
+    std::vector<arma::mat> cell_temps = std::vector<arma::mat>();
+    std::vector<arma::mat> cell_states = std::vector<arma::mat>();
     std::vector<arma::mat> outs = std::vector<arma::mat>();
 
     //input data for the cell
