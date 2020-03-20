@@ -183,21 +183,21 @@ void convolution(arma::cube * data)
 {
 	//convolution layer 1
 	if(convolution_layer1 == NULL)
-		convolution_layer1 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+		convolution_layer1 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer1->set_data(data);
 	convolution_layer1->convolve(2, activation_function);
 
 	//convolution layer 2
 	if(convolution_layer2 == NULL)
-		convolution_layer2 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+		convolution_layer2 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer2->set_data(data);
 	convolution_layer2->convolve(2, activation_function);
 
 	//convolution layer 3
 	if(convolution_layer3 == NULL)
-		convolution_layer3 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH, INPUT_BATCH_SIZE);
+		convolution_layer3 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer3->set_data(data);
 	convolution_layer3->convolve(2, activation_function);
@@ -225,7 +225,7 @@ void LSTM(arma::cube * data)
 			LSTM_cells[i].set_data(row_slice);
 		temp[i] = LSTM_cells[i].calculate_output(activation_function);
 	}
-	data->set_size(DATA_ROWS, temp[0].n_cols, INPUT_BATCH_SIZE);
+	data->set_size(DATA_ROWS, temp[0].n_cols, data->n_slices);
 	for(int i = 0; i < DATA_ROWS; i++)
 		data->tube(i, 0, i, data->n_cols - 1) = temp[i].t();
 
@@ -257,13 +257,17 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	arma::cube delta_error_wr2_lstm_BN_in = LSTM_batch_norm->back_propagation(delta_error_wr2_lstm_BN_out);
 
 	//backwards through LSTM
-
+	
+	arma::mat temp[DATA_ROWS];
 	for(int i = 0; i < DATA_ROWS; i++)
 	{
 		arma::mat delta_error_row_slice = delta_error_wr2_lstm_BN_in.tube(i, 0, i, delta_error_wr2_lstm_BN_in.n_cols - 1);
 		arma::inplace_trans(delta_error_row_slice);
-		LSTM_cells[i].back_propagation(delta_error_row_slice, activation_function);
+		temp[i] = LSTM_cells[i].back_propagation(delta_error_row_slice, activation_function);
 	}
+	arma::cube delta_error_wr2_LSTM_in = arma::cube(DATA_ROWS, temp[0].n_cols, predictions.n_rows);
+	for(int i = 0; i < DATA_ROWS; i++)
+		delta_error_wr2_LSTM_in.tube(i, 0, i, delta_error_wr2_LSTM_in.n_cols - 1) = temp[i].t();
 
 	//backwards through convolution layer 3
 

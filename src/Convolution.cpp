@@ -1,11 +1,11 @@
 #include "Convolution.h"
 #include <armadillo>
-Convolution::Convolution(arma::cube * data, int data_rows, int kernel_width, int batch_size)
+Convolution::Convolution(arma::cube * data, int data_rows, int kernel_width)
 {
     this->data = data;
     this->DATA_ROWS = data_rows;
     this->KERNEL_WIDTH = kernel_width;
-    this->INPUT_BATCH_SIZE = batch_size;
+    this->INPUT_BATCH_SIZE = data->n_slices;
 
     std::random_device rd;
 	
@@ -105,6 +105,7 @@ void Convolution::maxpooling(int step)
 void Convolution::set_data(arma::cube * data)
 {
     this->data = data;
+	this->INPUT_BATCH_SIZE = data->n_slices;
 }
 
 Convolution::~Convolution()

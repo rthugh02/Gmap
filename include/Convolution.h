@@ -15,7 +15,7 @@ private:
     int INPUT_BATCH_SIZE;
     void maxpooling(int); 
 public:
-    Convolution(arma::cube * data, int data_rows, int kernel_width, int batch_size);
+    Convolution(arma::cube * data, int data_rows, int kernel_width);
     ~Convolution();
 
     void set_data(arma::cube *);
