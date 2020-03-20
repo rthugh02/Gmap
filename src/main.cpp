@@ -338,11 +338,10 @@ void convert_data(std::vector<std::string> files)
 
 	//closure for creating batch of song data and enqueueing 
 	auto build_batch = [&]() {
-			row_counter = 0;
-
 			//song batch data
-			arma::cube * input_batch = new arma::cube(DATA_ROWS, DATA_ROW_LENGTH, INPUT_BATCH_SIZE);
+			arma::cube * input_batch = new arma::cube(DATA_ROWS, DATA_ROW_LENGTH, row_counter);
 			arma::mat * correct_output = new arma::mat(0, OUTPUT_COUNT);
+			row_counter = 0;
 			for(auto it = song_buffer.begin(); it != song_buffer.end(); it++)
 			{
 				input_batch->slice(row_counter) = *it;
