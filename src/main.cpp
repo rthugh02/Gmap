@@ -129,7 +129,6 @@ int main()
 void train()
 {
 	//while there are directory threads still doing work
-	int batch_count = 0;
 	while(unfinished_threads > 0) 
 	{
 		//if queue is empty block this thread to not waste CPU time polling 
