@@ -171,13 +171,14 @@ arma::mat LSTMCell::back_propagation(arma::mat delta_error, void (*activation_fu
         deltao_gate_next = delta_output_t;
         deltac_gate_next = delta_cell_temp_t;
     }
-
-
-
-
-
-
-
+    dataf_weights -= (dataf_gradient * learning_rate);
+    datai_weights -= (datai_gradient * learning_rate);
+    datao_weights -= (datao_gradient * learning_rate);
+    datac_weights -= (datac_gradient * learning_rate);
+    prevf_weights -= (prevf_gradient * learning_rate);
+    previ_weights -= (previ_gradient * learning_rate);
+    prevo_weights -= (prevo_gradient * learning_rate);
+    prevc_weights -= (prevc_gradient * learning_rate);
 
     return delta_error_wr2_cell_in;
 }

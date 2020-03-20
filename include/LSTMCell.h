@@ -29,6 +29,8 @@ class LSTMCell
     int batch_size;
     int features;
 
+    double learning_rate = 0.001;
+
     void split_row_slice(arma::mat row_slice);
     void clear_gates();
     public:

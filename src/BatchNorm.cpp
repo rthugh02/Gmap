@@ -99,8 +99,8 @@ arma::mat BatchNorm::back_propagation(arma::mat delta_error)
     ((batch_size * delta_error) - (arma::colvec(batch_size, arma::fill::ones) * delta_beta) - (mat_data_copy.each_row() % delta_gamma ));
     delta_error_wr2_batchnorm_in.each_row() %= ((double)(1/batch_size) * feature_scales_mat % (1 / feature_var_copy_mat));
     
-    //feature_shifts_mat -= (delta_beta * LEARNING_RATE);
-    //feature_scales_mat -= (delta_gamma * LEARNING_RATE);
+    feature_shifts_mat -= (delta_beta * learning_rate);
+    feature_scales_mat -= (delta_gamma * learning_rate);
     
     return delta_error_wr2_batchnorm_in;
 }
@@ -115,8 +115,8 @@ arma::cube BatchNorm::back_propagation(arma::cube delta_error)
     (delta_error *= batch_size).each_slice() - (delta_beta) - (cube_data_copy.each_slice() % delta_gamma);
     delta_error_wr2_batchnorm_in.each_slice() %= ((double)(1/batch_size) * feature_scales_cube % (1 / feature_var_copy_cube));
 
-    //feature_shifts_cube -= (delta_beta * LEARNING_RATE);
-    //feature_scales_cube -= (delta_gamma * LEARNING_RATE);
+    feature_shifts_cube -= (delta_beta * learning_rate);
+    feature_scales_cube -= (delta_gamma * learning_rate);
 
     return delta_error_wr2_batchnorm_in;
 }

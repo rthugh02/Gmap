@@ -75,7 +75,7 @@ arma::mat DenseNetwork::calculate_output(void (*activation_func)(arma::mat *, co
 arma::cube DenseNetwork::back_propagation(arma::mat predictions, arma::mat correct_output)
 {
     //update order: weights3 -> batch_norm2 -> weights2 -> batchnorm1 -> weights1 
-
+    
     arma::mat delta_error_wr2_batchnorm2_out = update_weights_3(predictions, correct_output);
     
     arma::mat delta_error_wr2_batchnorm2_in =  batch_norm2->back_propagation(delta_error_wr2_batchnorm2_out);
@@ -136,7 +136,7 @@ arma::mat DenseNetwork::update_weights_3(arma::mat predictions, arma::mat correc
     arma::mat ret = temp_delta * weights3.t();
     arma::mat weights3_gradient = arma::mean(delta_error_wr2_weights3, 2);
 
-    weights3 -= (weights3_gradient * 0.1);
+    weights3 -= (weights3_gradient * learning_rate);
     
     return ret;
 }
@@ -161,7 +161,7 @@ arma::mat DenseNetwork::update_weights_2(arma::mat delta_error_wr2_out)
     arma::mat ret = temp_delta * weights2.t();
     arma::mat weights2_gradient = arma::mean(delta_error_wr2_weights2, 2);
 
-    weights2 -= (weights2_gradient * 0.1);
+    weights2 -= (weights2_gradient * learning_rate);
    
     return ret;
 }
@@ -186,7 +186,7 @@ arma::mat DenseNetwork::update_weights_1(arma::mat delta_error_wr2_out)
     arma::mat ret = temp_delta * weights1.t();
     arma::mat weights1_gradient = arma::mean(delta_error_wr2_weights1, 2);
 
-    weights1 -= (weights1_gradient * 0.1);
+    weights1 -= (weights1_gradient * learning_rate);
 
     return ret;
 }
