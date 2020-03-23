@@ -126,7 +126,37 @@ arma::cube Convolution::back_propagation(arma::cube delta_error)
 {
 	//steps: maxpool -> batch norm -> convolving
 
+	max_pool_back_propagation(delta_error);
 
+	
+}
+
+arma::cube Convolution::max_pool_back_propagation(arma::cube delta_error)
+{
+	arma::cube delta_error_wr2_maxpool_in = arma::cube(max_cells.n_rows, max_cells.n_cols, delta_error.n_slices);
+
+	for(arma::uword slice = 0; slice < delta_error_wr2_maxpool_in.n_slices; slice++)
+	{
+		int gradient_col = 0;
+		for(arma::uword i = 0; i < delta_error_wr2_maxpool_in.n_cols; i+=KERNEL_WIDTH)
+		{
+			if(i + KERNEL_WIDTH - 1 < max_cells.n_cols)
+			{
+				for(arma::uword j = i; j < i + KERNEL_WIDTH; j++)
+				{
+					delta_error_wr2_maxpool_in.slice(slice).col(j) = max_cells.col(j) % delta_error.slice(slice).col(gradient_col);
+				}
+			}
+			else
+			{
+				for(arma::uword j = i; i < max_cells.n_cols - 1; j++)
+				{
+					delta_error_wr2_maxpool_in.slice(slice).col(j) = max_cells.col(j) % delta_error.slice(slice).col(gradient_col);
+				}
+			}
+			
+		}
+	}
 }
 
 Convolution::~Convolution()

@@ -62,7 +62,6 @@ void LSTMCell::split_row_slice(arma::mat row_slice)
     for(arma::uword i = 0; i < row_slice.n_cols; i+=features)
     {
         auto temp = row_slice.submat(0, i, batch_size - 1, i + features - 1);
-        //std::cout << "x sub t dims: " << temp.n_rows << " X " << temp.n_cols << std::endl;
         sub_mats.emplace_back(temp);
     }
 }
