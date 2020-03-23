@@ -13,13 +13,14 @@ private:
     unsigned int KERNEL_WIDTH;
     int DATA_ROWS;
     int INPUT_BATCH_SIZE;
-    void maxpooling(int); 
+    void maxpooling(); 
 public:
     Convolution(arma::cube * data, int data_rows, int kernel_width);
     ~Convolution();
 
     void set_data(arma::cube *);
-    void convolve(int, void (*)(arma::mat *, const char *));
+    void convolve(void (*)(arma::mat *, const char *));
+    arma::cube back_propagation(arma::cube);
 };
 
 #endif

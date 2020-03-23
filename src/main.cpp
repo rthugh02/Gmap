@@ -174,21 +174,21 @@ void convolution(arma::cube * data)
 		convolution_layer1 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer1->set_data(data);
-	convolution_layer1->convolve(2, activation_function);
+	convolution_layer1->convolve(activation_function);
 
 	//convolution layer 2
 	if(convolution_layer2 == NULL)
 		convolution_layer2 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer2->set_data(data);
-	convolution_layer2->convolve(2, activation_function);
+	convolution_layer2->convolve(activation_function);
 
 	//convolution layer 3
 	if(convolution_layer3 == NULL)
 		convolution_layer3 = new Convolution(data, DATA_ROWS, KERNEL_WIDTH);
 	else
 		convolution_layer3->set_data(data);
-	convolution_layer3->convolve(2, activation_function);
+	convolution_layer3->convolve(activation_function);
 }
 
 /*
@@ -258,7 +258,7 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		delta_error_wr2_conv3_out.tube(i, 0, i, delta_error_wr2_conv3_out.n_cols - 1) = temp[i].t();
 
 	//backwards through convolution layer 3
-	
+
 	//backwards through convolution layer 2
 
 	//backwards through convolution layer 1

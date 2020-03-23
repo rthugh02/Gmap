@@ -17,7 +17,7 @@ Convolution::Convolution(arma::cube * data, int data_rows, int kernel_width)
     this->kernel.imbue( [&]() {return distr(engine) * 2 / (data_rows); } );
 }
 
-void Convolution::convolve(int step, void (*activation_func)(arma::mat *, const char *))
+void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 {
     for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
@@ -62,13 +62,13 @@ void Convolution::convolve(int step, void (*activation_func)(arma::mat *, const 
     else
         batch_norm->set_data(data);
     batch_norm->normalize();
-    maxpooling(step);
+    maxpooling();
 }
 
-void Convolution::maxpooling(int step)
+void Convolution::maxpooling()
 {
     arma::mat temp[INPUT_BATCH_SIZE];
-
+	std::cout << "old column size: " << data->n_cols << std::endl;
 	int new_column_size = 0;
 	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
@@ -76,9 +76,9 @@ void Convolution::maxpooling(int step)
 		arma::mat pooled_song;
 		int index = 0;
 		//pooling based on step size for no overlap
-		for(arma::uword j = 0; j < data->n_cols; j+= step)
+		for(arma::uword j = 0; j < data->n_cols; j+= KERNEL_WIDTH)
 		{
-			if(j + step > data->n_cols - 1)
+			if(j + KERNEL_WIDTH > data->n_cols - 1)
 			{
 				pooled_song.insert_cols(index++ ,
 				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
@@ -87,13 +87,14 @@ void Convolution::maxpooling(int step)
 			else
 			{
 				pooled_song.insert_cols(index++ ,
-				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + step - 1), 1));
+				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + KERNEL_WIDTH - 1), 1));
 			}					
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
 		temp[slice] = pooled_song;
 	}
+	std::cout << "new column size: " << new_column_size << std::endl;
 	//setting size of data post max-pooling
 	data->set_size(DATA_ROWS, new_column_size, INPUT_BATCH_SIZE);
 	
@@ -106,6 +107,13 @@ void Convolution::set_data(arma::cube * data)
 {
     this->data = data;
 	this->INPUT_BATCH_SIZE = data->n_slices;
+}
+
+arma::cube Convolution::back_propagation(arma::cube delta_error)
+{
+	//steps: maxpool -> batch norm -> convolving
+
+
 }
 
 Convolution::~Convolution()
