@@ -75,8 +75,8 @@ int unfinished_threads = THREAD_COUNT;
 std::mutex queue_mutex;
 //mutex for thread safe decrementing of unfinished_threads
 std::mutex finish_mutex;
-//mutex for adding songs
-std::mutex song_mutex;
+//storing names of all song file locations
+std::vector<std::string> all_files;
 //condition variable used by train thread to make the assigned thread block when queue is empty
 std::condition_variable cond;
 //queue shared by threads
@@ -103,7 +103,6 @@ int main()
 	std::thread train_thread(train);
 	
 	//getting all file paths and randomly shuffling them
-	std::vector<std::string> all_files;
 	for(const auto & file : std::filesystem::directory_iterator("song_data/"))
 		all_files.push_back(file.path().string());
 	std::shuffle(std::begin(all_files), std::end(all_files), rd);
