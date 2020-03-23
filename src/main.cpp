@@ -252,7 +252,6 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		arma::mat delta_error_row_slice = delta_error_wr2_lstm_BN_in.tube(i, 0, i, delta_error_wr2_lstm_BN_in.n_cols - 1);
 		arma::inplace_trans(delta_error_row_slice);
 		temp[i] = LSTM_cells[i].back_propagation(delta_error_row_slice, activation_function);
-		std::cout << "LSTM back prop out dims: " << temp[i].n_rows << " X " << temp[i].n_cols << std::endl;
 	}
 	arma::cube delta_error_wr2_conv3_out = arma::cube(DATA_ROWS, temp[0].n_cols, predictions.n_rows);
 	for(int i = 0; i < DATA_ROWS; i++)

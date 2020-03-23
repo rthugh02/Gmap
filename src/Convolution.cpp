@@ -126,9 +126,11 @@ arma::cube Convolution::back_propagation(arma::cube delta_error)
 {
 	//steps: maxpool -> batch norm -> convolving
 
-	max_pool_back_propagation(delta_error);
+	arma::cube delta_error_wr2_maxpool_in = max_pool_back_propagation(delta_error);
 
-	
+	arma::cube delta_error_wr2_batchnorm_in = batch_norm->back_propagation(delta_error_wr2_maxpool_in);
+
+	return convolve_back_propagation(delta_error_wr2_batchnorm_in);
 }
 
 arma::cube Convolution::max_pool_back_propagation(arma::cube delta_error)
@@ -157,6 +159,14 @@ arma::cube Convolution::max_pool_back_propagation(arma::cube delta_error)
 			
 		}
 	}
+	return delta_error_wr2_maxpool_in;
+}
+
+arma::cube Convolution::convolve_back_propagation(arma::cube delta_error)
+{
+	arma::cube delta_error_wr2_convolution_in;
+
+	return delta_error_wr2_convolution_in;
 }
 
 Convolution::~Convolution()
