@@ -67,13 +67,14 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 
 void Convolution::maxpooling()
 {
-	max_cells = arma::mat(data->n_rows, data->n_cols);
+	max_cells = arma::umat(data->n_rows, data->n_cols);
     arma::mat temp[INPUT_BATCH_SIZE];
 	int new_column_size = 0;
 	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
 	{
 		arma::mat pooled_song;
+		int col_counter = 0;
 		int index = 0;
 		//pooling based on step size for no overlap
 		for(arma::uword j = 0; j < data->n_cols; j+= KERNEL_WIDTH)
@@ -83,14 +84,25 @@ void Convolution::maxpooling()
 				arma::mat step = data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1);
 				arma::colvec max_cell_vec = arma::max(step, 1);
 				pooled_song.insert_cols(index++, max_cell_vec);
+				for(arma::uword k = 0; k < step.n_cols; k++)
+					{
+						arma::colvec step_copy = step.col(k);
+						arma::umat result = (step_copy == max_cell_vec);	
+						max_cells.col(col_counter++) = result;
+					}
 			}
-				
 			else
 			{
 				arma::mat step = data->slice(slice).submat(0, j, DATA_ROWS - 1, j + KERNEL_WIDTH - 1);
 				arma::colvec max_cell_vec = arma::max(step, 1);
 				pooled_song.insert_cols(index++, max_cell_vec);
-			}					
+				for(arma::uword k = 0; k < step.n_cols; k++)
+					{
+						arma::colvec step_copy = step.col(k);
+						arma::umat result = (step_copy == max_cell_vec);
+						max_cells.col(col_counter++) = result;
+					}
+			}
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
