@@ -67,8 +67,8 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 
 void Convolution::maxpooling()
 {
+	max_cells = arma::mat(data->n_rows, data->n_cols);
     arma::mat temp[INPUT_BATCH_SIZE];
-	std::cout << "old column size: " << data->n_cols << std::endl;
 	int new_column_size = 0;
 	//for each song in the batch
 	for(arma::uword slice = 0; slice < data->n_slices; slice++)
@@ -80,21 +80,22 @@ void Convolution::maxpooling()
 		{
 			if(j + KERNEL_WIDTH > data->n_cols - 1)
 			{
-				pooled_song.insert_cols(index++ ,
-				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1), 1));
+				arma::mat step = data->slice(slice).submat(0, j, DATA_ROWS - 1, data->n_cols - 1);
+				arma::colvec max_cell_vec = arma::max(step, 1);
+				pooled_song.insert_cols(index++, max_cell_vec);
 			}
 				
 			else
 			{
-				pooled_song.insert_cols(index++ ,
-				(arma::colvec) arma::max(data->slice(slice).submat(0, j, DATA_ROWS - 1, j + KERNEL_WIDTH - 1), 1));
+				arma::mat step = data->slice(slice).submat(0, j, DATA_ROWS - 1, j + KERNEL_WIDTH - 1);
+				arma::colvec max_cell_vec = arma::max(step, 1);
+				pooled_song.insert_cols(index++, max_cell_vec);
 			}					
 		}
 		//storing new column size and each pooled entry
 		new_column_size = pooled_song.n_cols;
 		temp[slice] = pooled_song;
 	}
-	std::cout << "new column size: " << new_column_size << std::endl;
 	//setting size of data post max-pooling
 	data->set_size(DATA_ROWS, new_column_size, INPUT_BATCH_SIZE);
 	

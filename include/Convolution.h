@@ -9,6 +9,7 @@ private:
     arma::mat kernel;
     BatchNorm * batch_norm = NULL;
     arma::cube * data;
+    arma::mat max_cells;
 
     unsigned int KERNEL_WIDTH;
     int DATA_ROWS;
