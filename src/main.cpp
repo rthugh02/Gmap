@@ -165,16 +165,6 @@ arma::mat feed_forward(InputBatch * input)
 	LSTM(input->data);
 
 	return dense_layer(input->data);
-	
-	//calculating categorical cross entropy cost
-	/*
-	predictions.transform([&] (double val) { return log(val); });
-	predictions %= *(input->genres);
-
-	double loss = -arma::mean(
-		arma::sum(predictions, 1)
-	);
-	*/
 }
 
 void convolution(arma::cube * data)
@@ -263,12 +253,12 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		arma::inplace_trans(delta_error_row_slice);
 		temp[i] = LSTM_cells[i].back_propagation(delta_error_row_slice, activation_function);
 	}
-	arma::cube delta_error_wr2_LSTM_in = arma::cube(DATA_ROWS, temp[0].n_cols, predictions.n_rows);
+	arma::cube delta_error_wr2_conv3_out = arma::cube(DATA_ROWS, temp[0].n_cols, predictions.n_rows);
 	for(int i = 0; i < DATA_ROWS; i++)
-		delta_error_wr2_LSTM_in.tube(i, 0, i, delta_error_wr2_LSTM_in.n_cols - 1) = temp[i].t();
+		delta_error_wr2_conv3_out.tube(i, 0, i, delta_error_wr2_conv3_out.n_cols - 1) = temp[i].t();
 
 	//backwards through convolution layer 3
-
+	
 	//backwards through convolution layer 2
 
 	//backwards through convolution layer 1
