@@ -35,18 +35,28 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 			{
 				unsigned int padding, index = 0;
 				for(padding = j; padding < ((KERNEL_WIDTH - 1) / 2); padding++)
+				{
 					sub_mat.insert_cols(index++,arma::colvec(data->n_rows, arma::fill::zeros));
+				}
+					
 				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
+				{
 					sub_mat.insert_cols(index++, data->slice(slice).col(remaining++));
+				}
 			}
 			//apply padding vectors to right-most part of the X-axis
 			else if(j >= data->n_cols - ((KERNEL_WIDTH - 1) / 2))
 			{
 				unsigned int index = 0;
 				for(arma::uword adding = (j - ((KERNEL_WIDTH - 1) / 2)); adding < data->n_cols; adding++)
+				{
 					sub_mat.insert_cols(index++, data->slice(slice).col(adding));
+				}
+					
 				for(; index < KERNEL_WIDTH; index++)
+				{
 					sub_mat.insert_cols(index,arma::colvec(data->n_rows, arma::fill::zeros));
+				}
 			}
 			//no padding needed
 			else
@@ -82,13 +92,50 @@ arma::cube Convolution::convolve_back_propagation(arma::cube delta_error)
 
 	for(arma::uword slice = 0; slice < delta_error_wr2_convolve_in.n_slices; slice++)
 	{
-		arma::mat delta_kernel_error_singleslice = arma::mat(kernel.n_rows, kernel.n_cols);
-
-		for(arma::uword j = 0; j < delta_error_wr2_convolve_out.n_cols; j++)
+		for(arma::uword j = 0; j < data_copy.n_cols; j++)
 		{
-
-		}
+			arma::mat sub_mat_input;
+			//apply padding vectors on the left-most part of the X-axis
+			if(j < ((KERNEL_WIDTH - 1) / 2))
+			{
+				unsigned int padding, index = 0;
+				for(padding = j; padding < ((KERNEL_WIDTH - 1) / 2); padding++)
+				{
+					sub_mat_input.insert_cols(index++,arma::colvec(data_copy.n_rows, arma::fill::zeros));
+				}
+					
+				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
+				{
+					sub_mat_input.insert_cols(index++, data_copy.slice(slice).col(remaining++));
+				}
+					
+			}
+			//apply padding vectors to right-most part of the X-axis
+			else if(j >= data_copy.n_cols - ((KERNEL_WIDTH - 1) / 2))
+			{
+				unsigned int index = 0;
+				for(arma::uword adding = (j - ((KERNEL_WIDTH - 1) / 2)); adding < data_copy.n_cols; adding++)
+				{
+					sub_mat_input.insert_cols(index++, data_copy.slice(slice).col(adding));
+				}
+					
+				for(; index < KERNEL_WIDTH; index++)
+				{
+					sub_mat_input.insert_cols(index,arma::colvec(data_copy.n_rows, arma::fill::zeros));
+				}
+					
+			}
+			//no padding needed
+			else
+			{
+				sub_mat_input = data_copy.slice(slice).cols(j - ((KERNEL_WIDTH - 1) / 2), j + ((KERNEL_WIDTH - 1) / 2) );
+			}
+			//calculating change in kernel weights with respect to each step as the kernel moves across
+			delta_error_wr2_kernel += sub_mat_input.each_col() % delta_error_wr2_convolve_out.slice(slice).col(j);
+		}		
 	}
+	delta_error_wr2_kernel /= delta_error_wr2_convolve_in.n_slices;
+	kernel -= (delta_error_wr2_kernel * learning_rate);
 
 	return delta_error_wr2_convolve_in;
 }

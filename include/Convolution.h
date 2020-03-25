@@ -16,6 +16,7 @@ private:
     unsigned int KERNEL_WIDTH;
     int DATA_ROWS;
     int INPUT_BATCH_SIZE;
+    double learning_rate = 0.001;
     void maxpooling(); 
     arma::cube max_pool_back_propagation(arma::cube);
     arma::cube convolve_back_propagation(arma::cube);
