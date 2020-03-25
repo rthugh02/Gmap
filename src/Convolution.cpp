@@ -3,9 +3,11 @@
 Convolution::Convolution(arma::cube * data, int data_rows, int kernel_width)
 {
     this->data = data;
+	this->data_copy = *(data);
     this->DATA_ROWS = data_rows;
     this->KERNEL_WIDTH = kernel_width;
     this->INPUT_BATCH_SIZE = data->n_slices;
+	this->pre_relu = arma::cube(data->n_rows, data->n_cols, data->n_slices);
 
     std::random_device rd;
 	
@@ -55,6 +57,7 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 			convoluted_vectors.col(j) = arma::sum( (sub_mat % kernel) , 1);
 		}
 		data->slice(slice) = convoluted_vectors;
+		pre_relu.slice(slice) = convoluted_vectors;
 		activation_func(&data->slice(slice), "leakyrelu");
 	}
     if(batch_norm == NULL)
@@ -63,6 +66,31 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
         batch_norm->set_data(data);
     batch_norm->normalize();
     maxpooling();
+}
+
+arma::cube Convolution::convolve_back_propagation(arma::cube delta_error)
+{
+	//output of convolution is passed through leakyRelu, calculating gradient of that:
+
+	pre_relu.transform([&] (double val) { return val > 0 ? 1 : 0.01; });;
+
+	arma::cube delta_error_wr2_convolve_out = pre_relu % delta_error;
+
+	arma::cube delta_error_wr2_convolve_in = arma::cube(delta_error.n_rows, delta_error.n_cols, delta_error.n_slices);
+
+	arma::mat delta_error_wr2_kernel = arma::mat(kernel.n_rows, kernel.n_cols);
+
+	for(arma::uword slice = 0; slice < delta_error_wr2_convolve_in.n_slices; slice++)
+	{
+		arma::mat delta_kernel_error_singleslice = arma::mat(kernel.n_rows, kernel.n_cols);
+
+		for(arma::uword j = 0; j < delta_error_wr2_convolve_out.n_cols; j++)
+		{
+
+		}
+	}
+
+	return delta_error_wr2_convolve_in;
 }
 
 void Convolution::maxpooling()
@@ -116,23 +144,6 @@ void Convolution::maxpooling()
 		data->slice(i) = temp[i];
 }
 
-void Convolution::set_data(arma::cube * data)
-{
-    this->data = data;
-	this->INPUT_BATCH_SIZE = data->n_slices;
-}
-
-arma::cube Convolution::back_propagation(arma::cube delta_error)
-{
-	//steps: maxpool -> batch norm -> convolving
-
-	arma::cube delta_error_wr2_maxpool_in = max_pool_back_propagation(delta_error);
-
-	arma::cube delta_error_wr2_batchnorm_in = batch_norm->back_propagation(delta_error_wr2_maxpool_in);
-
-	return convolve_back_propagation(delta_error_wr2_batchnorm_in);
-}
-
 arma::cube Convolution::max_pool_back_propagation(arma::cube delta_error)
 {
 	arma::cube delta_error_wr2_maxpool_in = arma::cube(max_cells.n_rows, max_cells.n_cols, delta_error.n_slices);
@@ -162,11 +173,22 @@ arma::cube Convolution::max_pool_back_propagation(arma::cube delta_error)
 	return delta_error_wr2_maxpool_in;
 }
 
-arma::cube Convolution::convolve_back_propagation(arma::cube delta_error)
+arma::cube Convolution::back_propagation(arma::cube delta_error)
 {
-	arma::cube delta_error_wr2_convolution_in;
+	//steps: maxpool -> batch norm -> convolving
 
-	return delta_error_wr2_convolution_in;
+	arma::cube delta_error_wr2_maxpool_in = max_pool_back_propagation(delta_error);
+
+	arma::cube delta_error_wr2_batchnorm_in = batch_norm->back_propagation(delta_error_wr2_maxpool_in);
+
+	return convolve_back_propagation(delta_error_wr2_batchnorm_in);
+}
+
+void Convolution::set_data(arma::cube * data)
+{
+    this->data = data;
+	this->INPUT_BATCH_SIZE = data->n_slices;
+	this->pre_relu = arma::cube(data->n_rows, data->n_cols, data->n_slices);
 }
 
 Convolution::~Convolution()

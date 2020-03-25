@@ -10,6 +10,8 @@ private:
     BatchNorm * batch_norm = NULL;
     arma::cube * data;
     arma::umat max_cells;
+    arma::cube pre_relu;
+    arma::cube data_copy;
 
     unsigned int KERNEL_WIDTH;
     int DATA_ROWS;
