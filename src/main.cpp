@@ -81,8 +81,6 @@ std::vector<std::string> all_files;
 std::condition_variable cond;
 //queue shared by threads
 std::queue<InputBatch *> input_queue;
-//all songs
-std::vector<Song> songs;
 //Convolution Layers with maxpooling
 Convolution * convolution_layer1 = NULL;
 Convolution * convolution_layer2 = NULL;

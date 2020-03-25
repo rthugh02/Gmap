@@ -55,7 +55,7 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 			convoluted_vectors.col(j) = arma::sum( (sub_mat % kernel) , 1);
 		}
 		data->slice(slice) = convoluted_vectors;
-		activation_func(&data->slice(slice), "relu");
+		activation_func(&data->slice(slice), "leakyrelu");
 	}
     if(batch_norm == NULL)
         batch_norm = new BatchNorm(data);
