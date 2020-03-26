@@ -308,7 +308,6 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 
 void loss_and_accuracy(arma::mat predictions, arma::mat correct_output)
 {
-	std::cout << "what up we printing" << std::endl;
 	//calculating accuracy
 	arma::colvec genre_guess = arma::max(predictions, 1);
 	arma::colvec guess_for_correct_genre = arma::max(predictions % correct_output, 1);
