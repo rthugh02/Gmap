@@ -253,14 +253,13 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 	for(int i = 0; i < DATA_ROWS; i++)
 		delta_error_wr2_conv3_out.tube(i, 0, i, delta_error_wr2_conv3_out.n_cols - 1) = temp[i].t();
 
-	//backwards through convolution layer 3
-	arma::cube delta_error_wr2_conv3_in = convolution_layer3->back_propagation(delta_error_wr2_conv3_out);
-	//backwards through convolution layer 2
-	arma::cube delta_error_wr2_conv2_in = convolution_layer2->back_propagation(delta_error_wr2_conv3_in);
-	//backwards through convolution layer 1
-	convolution_layer1->back_propagation(delta_error_wr2_conv2_in);
-	//predictions.row(0).print("prediction: ");
-	//correct_output.row(0).print("label: ");
+	//backwards through convolution layers
+	convolution_layer1->back_propagation(
+		convolution_layer2->back_propagation(
+			convolution_layer3->back_propagation(delta_error_wr2_conv3_out)));
+
+	predictions.row(0).print("prediction: ");
+	correct_output.row(0).print("label: ");
 	predictions.transform([&] (double val) { return log(val); });
 	predictions %= correct_output;
 
