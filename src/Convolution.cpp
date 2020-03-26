@@ -38,7 +38,7 @@ void Convolution::convolve(void (*activation_func)(arma::mat *, const char *))
 				{
 					sub_mat.insert_cols(index++,arma::colvec(data->n_rows, arma::fill::zeros));
 				}
-					
+				padding = index;
 				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
 				{
 					sub_mat.insert_cols(index++, data->slice(slice).col(remaining++));
@@ -106,7 +106,7 @@ arma::cube Convolution::convolve_back_propagation(arma::cube delta_error)
 					sub_mat_delta.col(index) = delta_error_wr2_convolve_out.slice(slice).col(j + ((KERNEL_WIDTH - 1) / 2) - index);
 					index++;
 				}
-					
+				padding = index;
 				for(int remaining = 0; padding < KERNEL_WIDTH; padding++)
 				{
 					sub_mat_input.insert_cols(index, data_copy.slice(slice).col(remaining++));
