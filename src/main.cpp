@@ -37,9 +37,11 @@ void convolution(arma::cube *);
 void LSTM(arma::cube *);
 arma::mat dense_layer(arma::cube *);
 void max_pooling(arma::cube *, int);
-void train();
+void train(std::vector<std::string>);
 void back_propagation(arma::mat, arma::mat);
-void convert_data(std::vector<std::string>);
+void loss_and_accuracy(arma::mat, arma::mat);
+void convert_data(std::vector<std::string>, int);
+InputBatch * convert_validation_data(std::vector<std::string>);
 arma::rowvec genre_to_output(const char *);
 const char * output_to_genre(arma::rowvec);
 arma::mat feed_forward(InputBatch *);
@@ -73,8 +75,10 @@ int unfinished_threads = THREAD_COUNT;
 std::mutex queue_mutex;
 //mutex for thread safe decrementing of unfinished_threads
 std::mutex finish_mutex;
-//storing names of all song file locations
-std::vector<std::string> all_files;
+//storing names of files for training
+std::vector<std::string> training_files;
+//names of files for validation
+std::vector<std::string> validation_files;
 //condition variable used by train thread to make the assigned thread block when queue is empty
 std::condition_variable cond;
 //queue shared by threads
@@ -94,62 +98,101 @@ int main()
 	std::random_device rd;
 	//threads that will parse song_data directory and generate input data for NN
 	std::vector<std::thread> directory_threads;
-
-	//thread dedicated to feed-forward/back-propogation of NN
-	std::thread train_thread(train);
 	
 	//getting all file paths and randomly shuffling them
 	for(const auto & file : std::filesystem::directory_iterator("song_data/"))
-		all_files.push_back(file.path().string());
-	std::shuffle(std::begin(all_files), std::end(all_files), rd);
+		training_files.push_back(file.path().string());
+	std::shuffle(std::begin(training_files), std::end(training_files), rd);
+	
+	int validation_size = 100;
+
+	for(int i = 0; i < validation_size; i++)
+	{
+		validation_files.push_back(training_files[i]);
+	}
+	
+	training_files.erase(training_files.begin(), training_files.begin() + validation_size);
+
+	//thread dedicated to feed-forward/back-propogation of NN
+	std::thread train_thread(train, validation_files);
 
 	//Iterating through all song data that will be used as input
 	int song_count = 0;
 	std::vector<std::string> thread_tasks[THREAD_COUNT];
 
-	for(auto file : all_files)
+	for(auto file : training_files)
 		thread_tasks[song_count++ % THREAD_COUNT].push_back(file);
 
 	//launching threads for converting song_data files
 	for(auto & task : thread_tasks)
-		directory_threads.emplace_back(convert_data, task);
+		directory_threads.emplace_back(convert_data, task, INPUT_BATCH_SIZE);
 
-	//joining threads
+	//detaching directory threads
 	for(auto & thread : directory_threads)
-		thread.join();
+		thread.detach();
+		
 	train_thread.join();
 }
 
 //Function for retreiving batches of song data from queue for feed-forward/backpropogation
-void train()
+void train(std::vector<std::string> validation_files)
 {
-	//while there are directory threads still doing work
-	while(unfinished_threads > 0) 
+	std::cout << "constructing validation set.." << std::endl;
+	InputBatch * validation_batch = convert_validation_data(validation_files);
+	int epoch = 0;
+	while(epoch < 50)
 	{
-		//if queue is empty block this thread to not waste CPU time polling 
-		std::unique_lock<std::mutex> lock(queue_mutex);
-		while (input_queue.empty())
-			cond.wait(lock);
+		//while there are directory threads still doing work
+		while(unfinished_threads > 0) 
+		{
+			//if queue is empty block this thread to not waste CPU time polling 
+			std::unique_lock<std::mutex> lock(queue_mutex);
+			while (input_queue.empty())
+				cond.wait(lock);
+
+			InputBatch * next = input_queue.front();
+			input_queue.pop();
+
+			arma::mat predictions = feed_forward(next);
+			back_propagation(predictions, *(next->genres));
+			next->free();
+			//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		}
+		while(!input_queue.empty())
+		{
+			InputBatch * next = input_queue.front();
+			input_queue.pop();
+
+			arma::mat predictions = feed_forward(next);
+			back_propagation(predictions, *(next->genres));
+			next->free();
+			//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
+		}
+		//running validation after epoch completes
+		InputBatch * validation_input = new InputBatch(*(validation_batch->data), *(validation_batch->genres));
+		arma::mat validation_predictions = feed_forward(validation_input);
+		std::cout << "validation loss and accuracy: " << std::endl;
+		loss_and_accuracy(validation_predictions, *(validation_input->genres));
+		validation_input->free();
+
+		//resetting directory thread counting and shuffling files
+		unfinished_threads = THREAD_COUNT;
+		std::random_device rd;
+		std::shuffle(std::begin(training_files), std::end(training_files), rd);
+
+		//kicking off new threads for reading in song data
+		std::vector<std::thread> directory_threads;
+		std::vector<std::string> thread_tasks[THREAD_COUNT];
+		int song_count = 0;
+		for(auto file : training_files)
+			thread_tasks[song_count++ % THREAD_COUNT].push_back(file);
+		for(auto & task : thread_tasks)
+			directory_threads.emplace_back(convert_data, task, INPUT_BATCH_SIZE);
 		
-		InputBatch * next = input_queue.front();
-		input_queue.pop();
-
-		arma::mat predictions = feed_forward(next);
-		back_propagation(predictions, *(next->genres));
-		next->free();
-		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-	}
-	while(!input_queue.empty())
-	{
-		InputBatch * next = input_queue.front();
-		input_queue.pop();
-
-		arma::mat predictions = feed_forward(next);
-		back_propagation(predictions, *(next->genres));
-		next->free();
-		//std::cout << "item " << ++batch_count << " loss: " << loss << std::endl;
-	}
-	
+		for(auto & thread : directory_threads)
+			thread.detach();
+		epoch++;
+	}	
 }
 
 arma::mat feed_forward(InputBatch * input)
@@ -260,6 +303,11 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 
 	//predictions.row(0).print("prediction: ");
 	//correct_output.row(0).print("label: ");
+	loss_and_accuracy(predictions, correct_output);
+}
+
+void loss_and_accuracy(arma::mat predictions, arma::mat correct_output)
+{
 	//calculating accuracy
 	arma::colvec genre_guess = arma::max(predictions, 1);
 	arma::colvec guess_for_correct_genre = arma::max(predictions % correct_output, 1);
@@ -323,7 +371,7 @@ void activation_function(arma::mat * input, const char * function)
 matrices of row size INPUT_BATCH_SIZE. These matrices are then enqueued and consumed 
 by the training thread.
 */
-void convert_data(std::vector<std::string> files)
+void convert_data(std::vector<std::string> files, int batch_size)
 {
 	//JSON parser
 	rapidjson::Document document;
@@ -356,7 +404,7 @@ void convert_data(std::vector<std::string> files)
 	};
 	for(const auto & file : files)
 	{
-		if(row_counter < INPUT_BATCH_SIZE)
+		if(row_counter < batch_size)
 		{
 			//Reading song data into string
 			std::ifstream f(file);
@@ -391,10 +439,6 @@ void convert_data(std::vector<std::string> files)
 			song_buffer.push_back(spectogram_data);
 			genre_buffer.push_back(genre_to_output(genre));
 			row_counter++;
-			
-			//song_mutex.lock();
-			//songs.emplace_back(spectogram_data, genre_to_output(genre));
-			//song_mutex.unlock();
 		}
 		else
 			build_batch();	
@@ -405,7 +449,67 @@ void convert_data(std::vector<std::string> files)
 	finish_mutex.lock();
 	unfinished_threads--;
 	finish_mutex.unlock();
-	std::cout << "thread finished.." << std::endl;
+}
+
+InputBatch * convert_validation_data(std::vector<std::string> validation_files)
+{
+	//JSON parser
+	rapidjson::Document document;
+	int row_counter = 0;
+
+	std::vector<arma::mat> song_buffer;
+	std::vector<arma::rowvec> genre_buffer; 
+	InputBatch * ret = NULL;
+
+	auto build_batch = [&]() {
+			//song batch data
+			arma::cube * input_batch = new arma::cube(DATA_ROWS, DATA_ROW_LENGTH, row_counter);
+			arma::mat * correct_output = new arma::mat(0, OUTPUT_COUNT);
+			row_counter = 0;
+			for(auto it = song_buffer.begin(); it != song_buffer.end(); it++)
+			{
+				input_batch->slice(row_counter) = *it;
+				correct_output->insert_rows(row_counter, genre_buffer[row_counter]);
+				row_counter++;
+			}
+			ret = new InputBatch(input_batch, correct_output);
+	};
+
+	for(const auto & file : validation_files)
+	{
+		//Reading song data into string
+		std::ifstream f(file);
+		std::string content( (std::istreambuf_iterator<char>(f) ),
+                    (std::istreambuf_iterator<char>()));
+		//parsing json data 
+		document.Parse(content.c_str());
+		auto raw_data = document["data"].GetArray();
+		auto genre = document["genre"].GetString();
+		arma::mat spectogram_data(0, DATA_ROW_LENGTH);
+		for(rapidjson::SizeType i = 0; i < raw_data.Size(); i++) 
+    	{
+			std::vector<double> temp;
+			int inner_row_count = 0;
+        	rapidjson::Value& row = raw_data[i];
+        	for(rapidjson::SizeType j = 0; j < row.Size(); j++)
+			{
+				temp.push_back(row[j].GetDouble());
+				inner_row_count++;
+			}
+			//adding missing time data to end if not long enough
+			while(inner_row_count < DATA_ROW_LENGTH)
+			{
+				temp.push_back(0);
+				inner_row_count++;
+			}
+			spectogram_data.insert_rows((int)i, arma::rowvec(temp));				
+    	}
+		song_buffer.push_back(spectogram_data);
+		genre_buffer.push_back(genre_to_output(genre));
+		row_counter++;	
+	}
+	build_batch();
+	return ret;
 }
 
 /*

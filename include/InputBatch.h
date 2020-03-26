@@ -13,6 +13,7 @@ class InputBatch
     //matrix of data. Each row represents the correct output vector corresponding with each slice in the batch. 
     arma::mat * genres;
     InputBatch(arma::cube * input_matrix, arma::mat * genres);
+    InputBatch(arma::cube input_matrix, arma::mat genres);
     void free();
 
     ~InputBatch();  
