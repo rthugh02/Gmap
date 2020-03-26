@@ -308,6 +308,7 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 
 void loss_and_accuracy(arma::mat predictions, arma::mat correct_output)
 {
+	std::cout << "what up we printing" << std::endl;
 	//calculating accuracy
 	arma::colvec genre_guess = arma::max(predictions, 1);
 	arma::colvec guess_for_correct_genre = arma::max(predictions % correct_output, 1);
@@ -322,8 +323,10 @@ void loss_and_accuracy(arma::mat predictions, arma::mat correct_output)
 		arma::sum(predictions, 1)
 	);
 
-	std::cout << ++loss_count <<" loss: " << loss;
-	std::cout << " accuracy: " << (double)correct / total << std::endl;
+	std::ofstream output_data;
+	output_data.open("output.txt", std::ofstream::out | std::ofstream::app);
+	output_data << ++loss_count <<" loss: " << loss;
+	output_data << " accuracy: " << (double)correct / total << std::endl;
 }
 
 void activation_function(arma::mat * input, const char * function)
