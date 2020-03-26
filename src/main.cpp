@@ -27,8 +27,6 @@
 
 	Layers/steps to build:
 	- Add bias to all needed layers
-	- Create back propagation step
-
 */
 
 //*****************************//
