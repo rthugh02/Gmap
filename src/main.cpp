@@ -258,8 +258,15 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		convolution_layer2->back_propagation(
 			convolution_layer3->back_propagation(delta_error_wr2_conv3_out)));
 
-	predictions.row(0).print("prediction: ");
-	correct_output.row(0).print("label: ");
+	//predictions.row(0).print("prediction: ");
+	//correct_output.row(0).print("label: ");
+	//calculating accuracy
+	arma::colvec genre_guess = arma::max(predictions, 1);
+	arma::colvec guess_for_correct_genre = arma::max(predictions % correct_output, 1);
+	int correct = arma::sum(genre_guess == guess_for_correct_genre);
+	int total = predictions.n_rows;
+	
+	//calculating loss
 	predictions.transform([&] (double val) { return log(val); });
 	predictions %= correct_output;
 
@@ -267,7 +274,8 @@ void back_propagation(arma::mat predictions, arma::mat correct_output)
 		arma::sum(predictions, 1)
 	);
 
-	std::cout << ++loss_count <<" loss: " << loss << std::endl;
+	std::cout << ++loss_count <<" loss: " << loss;
+	std::cout << " accuracy: " << (double)correct / total << std::endl;
 }
 
 void activation_function(arma::mat * input, const char * function)
