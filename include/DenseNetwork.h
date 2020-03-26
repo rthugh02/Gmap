@@ -20,7 +20,7 @@ private:
     BatchNorm * batch_norm1 = NULL;
     BatchNorm * batch_norm2 = NULL;
     
-    double learning_rate = 0.006;
+    double learning_rate = 0.001;
     //batch data
     arma::mat data;
 
