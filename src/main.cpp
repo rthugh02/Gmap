@@ -206,7 +206,7 @@ void LSTM(arma::cube * data)
 		if(LSTM_cells.size() < DATA_ROWS)
 			LSTM_cells.emplace_back(row_slice, data->n_slices, split_column_width, LSTM_TIMESTEP);
 		else
-			LSTM_cells[i].set_data(row_slice);
+			LSTM_cells[i].set_data(row_slice, data->n_slices);
 		temp[i] = LSTM_cells[i].calculate_output(activation_function);
 	}
 	data->set_size(DATA_ROWS, temp[0].n_cols, data->n_slices);

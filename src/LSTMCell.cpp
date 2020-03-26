@@ -40,9 +40,10 @@ LSTMCell::LSTMCell(arma::mat row_slice, int batch_size, int features, int hidden
     engine.seed(rd());
 }
 
-void LSTMCell::set_data(arma::mat row_slice)
+void LSTMCell::set_data(arma::mat row_slice, int batch_size)
 {
     clear_gates();
+    this->batch_size = batch_size;
     split_row_slice(row_slice);
 }
 
