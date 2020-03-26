@@ -172,6 +172,9 @@ void train(std::vector<std::string> validation_files)
 		InputBatch * validation_input = new InputBatch(*(validation_batch->data), *(validation_batch->genres));
 		arma::mat validation_predictions = feed_forward(validation_input);
 		std::cout << "validation loss and accuracy: " << std::endl;
+		std::ofstream output_data;
+		output_data.open("output.txt", std::ofstream::out | std::ofstream::app);
+		output_data << ++epoch <<  " validation loss and accuracy: " << std::endl;
 		loss_and_accuracy(validation_predictions, *(validation_input->genres));
 		validation_input->free();
 
@@ -191,7 +194,6 @@ void train(std::vector<std::string> validation_files)
 		
 		for(auto & thread : directory_threads)
 			thread.detach();
-		epoch++;
 	}	
 }
 
@@ -322,6 +324,8 @@ void loss_and_accuracy(arma::mat predictions, arma::mat correct_output)
 		arma::sum(predictions, 1)
 	);
 
+	std::cout << loss_count <<" loss: " << loss;
+	std::cout << " accuracy: " << (double)correct / total << std::endl;
 	std::ofstream output_data;
 	output_data.open("output.txt", std::ofstream::out | std::ofstream::app);
 	output_data << ++loss_count <<" loss: " << loss;
