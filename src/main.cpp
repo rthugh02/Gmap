@@ -16,18 +16,6 @@
 #include "LSTMCell.h"
 #include "DenseNetwork.h"
 #include "BatchNorm.h"
-#include "Song.h"
-/*
-	TROUBLESHOOTING:
-
-	-If can't open a library in application lib, run sudo ldconfig /home/rthugh02/Documents/Masters_Project/NN_Project/lib
-	to refresh library cache
-
-	TODO AND NOTES:
-
-	Layers/steps to build:
-	- Add bias to all needed layers
-*/
 
 //*****************************//
 //*********FUNCTIONS***********//
